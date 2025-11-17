@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Balok Gopal Store — বাংলা / English</title>
+  <style>
+    body { font-family: Arial, sans-serif;
+    margin: 0; background: #f0f0f0; color:#222; }
+    header { background: #ff7043; color: #fff; padding: 15px; text-align: center;
+    }
+    nav { display: flex; justify-content: center; flex-wrap: wrap; margin: 10px 0; gap:8px;
+    }
+    nav button { padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; background: #ffccbc;
+    }
+    nav button:hover { background: #ffab91; }
+    .section { display: none; padding: 15px;
+    margin: 15px auto; max-width: 980px; background: #fff; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+    .show { display: block; }
+    input, select, textarea { width: 100%; padding: 10px;
+    margin: 6px 0; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box;
+    }
+    /* Style for the password show checkbox */
+    .show-pass-container { margin: 5px 0 10px 0;
+    display: flex; align-items: center; gap: 5px; }
+    .show-pass-container input { width: auto; margin: 0;
+    }
+    .show-pass-container label { user-select: none; cursor: pointer; font-size: 0.9em;
+    }
+    
+    button.action { background: #ff7043; color: #fff; border: none; margin-top: 6px; cursor: pointer;
+    width: 100%; border-radius: 6px; padding: 10px; }
+    button.action.small { width: auto; padding: 6px 10px;
+    }
+
+    /* ▼▼▼ MODIFIED for Grid Layout ▼▼▼ */
+    #custProdList, #prodList {
+      display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* Responsive grid */
+      gap: 15px;
+    }
+    .product-card { 
+      background: #fff3e0; 
+      border-radius: 8px; 
+      margin: 0;
+    /* Removed margin-top/bottom */
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06); 
+      display:flex; 
+      flex-direction: column;
+    /* Vertical card layout */
+      align-items: stretch;
+    /* Make cards in a row same height */
+      overflow: hidden;
+    /* Keep rounded corners */
+    }
+    .product-card img { 
+      width: 100%;
+    /* Full width */
+      max-width: 100%;
+    /* Override old style */
+      border-radius: 8px 8px 0 0;
+    /* Rounded top */
+      display: block; 
+      object-fit:cover; 
+      height: 130px;
+    /* Fixed height for image */
+    }
+    .product-info { 
+      flex:1;
+    /* Take remaining space */
+      padding: 10px;
+    }
+    .product-info h4 { margin: 0 0 5px 0;
+    }
+    .product-info p { margin: 4px 0;
+    }
+    .product-buttons {
+      padding: 0 10px 10px 10px;
+      display: flex;
+      flex-direction: column;
+    gap: 6px;
+    }
+    /* Input for kg */
+    .kg-input { display: flex; gap: 6px;
+    }
+    .kg-input input { width: 70px; padding: 6px; text-align: center;
+    }
+    .kg-input button { flex: 1; padding: 6px;
+    }
+    
+    /* ▼▼▼ MODIFIED for Cart (No Image) ▼▼▼ */
+    #cartList .product-card {
+      flex-direction: row;
+    /* Horizontal layout for cart */
+      align-items: center;
+      background: #fdfbe9;
+    }
+    #cartList .product-card img { display: none;
+    } /* Hide image in cart */
+    #cartList .product-info { padding: 10px;
+    }
+    #cartList .cart-actions { display: flex; gap: 5px; padding: 10px;
+    }
+    /* ▲▲▲ END MODIFICATIONS ▲▲▲ */
+
+    .row { display:flex; gap:10px;
+    }
+    .col { flex:1; }
+    .muted { color:#666; font-size:0.9em;
+    }
+    .stats { background:#fbe9e7; padding:10px; border-radius:8px; margin-top:10px; }
+    .inline-btn { display:inline-block;
+    margin:6px 6px 0 0; padding:6px 10px; background:#ff7043; color:#fff; border-radius:6px; cursor:pointer; border:none; }
+    footer { text-align:center; margin:18px 0;
+    color:#555; }
+    .status { font-size:0.85rem; padding:0.2rem 0.5rem; border-radius:6px; margin-left:6px;
+    }
+    .pending{background:#ffeb3b;}
+    .shipped{background:#2196f3;color:#fff;}
+    .delivered{background:#4caf50;color:#fff;}
+    .cancelled{background:#f44336;color:#fff;}
+    
+    /* ▼▼▼ NEW: For Sub-Category List ▼▼▼ */
+    .category-list-item {
+        border: 1px solid #ffccbc;
+    border-radius: 8px;
+        margin: 10px 0;
+        overflow: hidden;
+    }
+    .category-header {
+        display: flex;
+    justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        background: #fff3e0;
+    }
+    .category-header h4 { margin: 0;
+    }
+    .subcategory-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    padding: 10px;
+        margin-left: 20px;
+        border-top: 1px solid #fbe9e7;
+    }
+    .subcategory-item h5 { margin: 0;
+    }
+    /* ▲▲▲ END Sub-Category List ▲▲▲ */
+
+    /* ▼▼▼ MODIFIED: For Show More/Less (Added #catList) ▼▼▼ */
+    /* Hide 9th item and beyond for Products */
+    #prodList .product-card:nth-child(n+9),
+    #custProdList .product-card:nth-child(n+9) {
+        display: none;
+    }
+    /* Show all products when expanded */
+    #prodList.expanded .product-card,
+    #custProdList.expanded .product-card {
+        display: flex !important;
+    /* Use flex to match .product-card style */
+    }
+    /* NEW: Hide 6th item and beyond for Categories */
+    #catList .category-list-item:nth-child(n+6) {
+        display: none;
+    }
+    /* Show all categories when expanded */
+    #catList.expanded .category-list-item {
+        display: block !important;
+    }
+    /* ▲▲▲ END Show More/Less ▲▲▲ */
+
+    @media (max-width:800px){ .row{flex-direction:column;} nav{flex-direction:column;gap:6px;} }
+    /* Fix for 1-column grid on small screens */
+    @media (max-width: 480px){ #custProdList, #prodList { grid-template-columns: 1fr;
+    } }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Balok Gopal Store</h1>
+  <p>ফ্রেশ ফল ও প্রতিদিনের প্রোডাক্ট — Fresh fruits & daily products</p>
+</header>
+
+<nav>
+  <button onclick="showPanel('adminLogin')">Admin / এডমিন</button>
+  <button onclick="showPanel('developerLogin')">Developer / ডেভেলপার</button>
+  <button onclick="showPanel('customerPanel')">Customer / কাস্টমার</button>
+</nav>
+
+<div id="adminLogin" class="section">
+  <h3>🔐 Admin Login — এডমিন লগইন</h3>
+  <input type="password" id="adminPassword" placeholder="Password / পাসওয়ার্ড দিন">
+  <div class="show-pass-container">
+    <input type="checkbox" onclick="togglePassword('adminPassword')" id="showAdminPass">
+    <label for="showAdminPass">Show Password / পাসওয়ার্ড দেখুন</label>
+  </div>
+  <div class="row">
+    <button class="action col" onclick="adminLogin()">Login / লগইন</button>
+    <button class="action col" onclick="showPanel('customerPanel')">Go to Customer / কাস্টমার প্যানেল</button>
+  </div>
+  
+  <p id="loginMsg" style="color:red;"></p>
+</div>
+
+<div id="developerLogin" class="section">
+  <h3>🧑‍💻 Developer Login — ডেভেলপার লগইন</h3>
+  <input type="password" id="devPassword" placeholder="Developer Password / পাসওয়ার্ড দিন">
+  <div class="show-pass-container">
+    <input type="checkbox" onclick="togglePassword('devPassword')" id="showDevPass">
+    <label for="showDevPass">Show Developer Password / পাসওয়ার্ড দেখুন</label>
+  </div>
+  <div class="row">
+    <button class="action col" onclick="developerLogin()">Login / লগইন</button>
+    <button class="action col" onclick="showPanel('customerPanel')">Go to Customer / কাস্টমার প্যানেল</button>
+  </div>
+  <p id="devLoginMsg" style="color:red;"></p>
+</div>
+
+<div id="adminPanel" class="section">
+  <h2>⚙ Admin Panel — এডমিন প্যানেল</h2>
+
+  <h3>Add/Edit Category — ক্যাটাগরি যোগ/সম্পাদনা</h3>
+  <div class="row">
+    <input type="text" id="catNameEn" placeholder="Category (English)">
+  
+    <input type="text" id="catNameBn" placeholder="ক্যাটাগরি (বাংলা)">
+  </div>
+  <div class="row">
+    <button class="action col" onclick="saveCategory()" id="saveCategoryBtn">Save Category — সেভ করুন</button>
+    <button class="action col" onclick="cancelEditCategory()" style="background:#9e9e9e;">Cancel Edit — বাতিল</button>
+  </div>
+  
+  <hr>
+  <h3>Add/Edit Sub-Category — সাব-ক্যাটাগরি যোগ/সম্পাদনা</h3>
+  <div class="row">
+    <select id="subCatParentSelect" class="col">
+      <option value="">-- Select Parent Category --</option>
+    </select>
+    <div class="col">
+      <input type="text" id="subCatNameEn" placeholder="Sub-Category (English)">
+      <input type="text" id="subCatNameBn" placeholder="সাব-ক্যাটাগরি (বাংলা)">
+    </div>
+ 
+  </div>
+  <div class="row">
+    <button class="action col" onclick="saveSubCategory()" id="saveSubCategoryBtn">Save Sub-Category — সেভ করুন</button>
+    <button class="action col" onclick="cancelEditSubCategory()" style="background:#9e9e9e;">Cancel Edit — বাতিল</button>
+  </div>
+
+  <hr>
+  <h3>Category List — ক্যাটাগরি তালিকা</h3>
+  <div id="catList"></div>
+  <button class="action" onclick="toggleListExpansion('catList', this)" id="catListToggleBtn" style="margin-top: 10px;">Show More</button>
+  
+  <hr>
+
+  <h3>Add / Edit Product — প্রোডাক্ট যোগ / সম্পাদনা</h3>
+  <div class="row">
+    <select id="prodSubCatSelect" class="col">
+      <option value="">-- Select Category / Sub-Category --</option>
+    </select>
+    <div class="col">
+      <input 
+    type="text" id="prodNameEn" placeholder="Product name (English)">
+      <input type="text" id="prodNameBn" placeholder="প্রোডাক্ট নাম (বাংলা)">
+    </div>
+  </div>
+  <div class="row">
+    <input type="number" id="prodPrice" placeholder="Price — দাম (e.g.
+    120)">
+    <select id="prodUnit" class="col">
+      <option value="perKg">₹ per Kg — প্রতি কেজি</option>
+      <option value="each">₹ each — প্রতি পিস</option>
+    </select>
+  </div>
+  <div class="row">
+    <input type="number" id="prodDiscount" placeholder="Discount — ডিসকাউন্ট (0 if none)">
+    <select id="discountType" class="col">
+      <option value="percent">% — Percentage</option>
+      <option value="flat">₹ — Flat amount</option>
+    </select>
+  </div>
+  <input type="file" id="prodPhoto" accept="image/*">
+  <div class="row">
+    <button class="action col" onclick="saveProduct()" id="saveProductBtn">Save Product — 
+    সেভ করুন</button>
+    <button class="action col" onclick="cancelEdit()" style="background:#9e9e9e;">Cancel Edit — বাতিল</button>
+  </div>
+
+  <h3>Filter Products — প্রোডাক্ট ফিল্টার</h3>
+  <select id="adminSubCatFilter" onchange="updateAdminProducts()">
+    <option value="">-- All Categories / Sub-Categories --</option>
+  </select>
+
+  <h3>Search Products — প্রোডাক্ট খুঁজুন</h3>
+  <input type="text" id="adminSearch" placeholder="Search by name or category (EN/BN) — নাম বা ক্যাটাগরি">
+
+  <h3>Products — প্রোডাক্ট তালিকা</h3>
+  <div id="prodList"></div>
+  <button class="action" onclick="toggleListExpansion('prodList', this)" id="prodListToggleBtn" style="margin-top: 10px;">Show More</button>
+
+
+  <div class="stats">
+    <h4>📊 Sales Stats — বিক্রির হিসাব</h4>
+    <p id="todayOrders">Today's Orders — আজকের অর্ডার: 0</p>
+    <p 
+    id="todayEarnings">Today's Earnings — আজকের আয়: ₹0</p>
+    <div id="historyList" class="muted"></div>
+    <div style="margin-top:8px;">
+      <button class="inline-btn" onclick="clearTodayOrders()">Delete Today's Orders — আজ মুছুন</button>
+      <button class="inline-btn" onclick="clearHistory()">Delete 7-day History — ৭ দিনের হিসাব মুছুন</button>
+    </div>
+  </div>
+
+  <div style="margin-top:12px;">
+    <button class="action" onclick="logoutAdmin()">Logout — লগআউট</button>
+  </div>
+</div>
+
+<div id="developerPanel" class="section">
+  <h2>🛠 Developer Panel — ডেভেলপার প্যানেল</h2>
+  
+  <h3>Execute Live Code (Temporary) — লাইভ কোড চালান (অস্থায়ী)</h3>
+  <p class="muted"><b>Warning:</b> This code runs on the live page but *does not* save to 
+    the file. Changes are lost on reload. — <b>সতর্কতা:</b> এই কোডটি লাইভ পেজে চলে কিন্তু ফাইলে সেভ হয় না।
+    রিলোড করলে পরিবর্তন মুছে যাবে।</p>
+  <textarea id="devCode" rows="10" placeholder="Enter JavaScript code here... (e.g. alert('Hello');)"></textarea>
+  <button class="action" onclick="runDevCode()">Run Code — কোড চালান</button>
+  <p id="devCodeMsg" style="font-weight:bold;"></p>
+  
+  <hr>
+
+  <h3>📞 Order Recipient Phone — অর্ডার ফোন নম্বর</h3>
+  <p class="muted">Select which WhatsApp number receives the orders.
+    — কোন WhatsApp নম্বরে অর্ডার যাবে তা নির্বাচন করুন।</p>
+  <select id="orderPhoneSelect">
+    <option value="+917003778369">+91 7003778369</option>
+    <option value="+916291259116">+91 6291259116</option>
+    <option value="+916289380299">+91 6289380299</option>
+    <option value="+918515841915">+91 8515841915</option>
+  </select>
+  <button class="action" onclick="saveOrderPhone()">Save Phone Setting — সেভ করুন</button>
+  <p id="currentOrderPhone" style="font-weight:bold;"></p>
+  
+  <hr>
+  <div style="margin-top:12px;">
+    <button class="action" onclick="logoutDeveloper()">Logout — লগআউট</button>
+  </div>
+</div>
+
+
+<div id="customerPanel" class="section">
+  <h2>🛒 Customer Panel — কাস্টমার প্যানেল</h2>
+  <label>Name — নাম</label>
+  <input type="text" id="custName" placeholder="Your name / আপনার নাম">
+  <label>Phone — ফোন</label>
+  <input type="text" id="custPhone" placeholder="Phone number 
+    / ফোন নম্বর">
+  <label>Address — ঠিকানা</label>
+  <textarea id="custAddress" placeholder="Your address / আপনার ঠিকানা"></textarea>
+
+  <h3>Select Category — ক্যাটাগরি নির্বাচন</h3>
+  <select id="custSubCatFilter" onchange="showProducts()">
+    <option value="">-- All Categories / Sub-Categories --</option>
+  </select>
+
+  <h3>Search Products — প্রোডাক্ট খুঁজুন</h3>
+  <input type="text" id="custSearch" placeholder="Search by name or category (EN/BN) — নাম বা ক্যাটাগরি">
+  
+  <button class="inline-btn" onclick="document.getElementById('cartList').scrollIntoView({behavior: 'smooth', block: 'start'});"
+    style="margin-top: 10px; width: 100%; padding: 10px;">
+    🛒 View Cart / Go to Cart — কার্ট দেখুন
+  </button>
+
+  <div id="custProdList" style="margin-top:15px;"></div>
+  <button class="action" onclick="toggleListExpansion('custProdList', this)" id="custProdListToggleBtn" style="margin-top: 10px;">Show More</button>
+
+  <h3>🛍 Your Cart — আপনার কার্ট</h3>
+  <div id="cartList"></div>
+  <h4 id="cartTotal">Total — মোট: ₹0</h4>
+  <div class="row">
+    <button class="action col" onclick="checkout()">✅ Order Now — অর্ডার করুন</button>
+    </div>
+  <p class="muted">Cart is tied to phone number.
+    Closing page clears this customer's cart. — কার্ট ফোন নম্বরে সংযুক্ত।
+    পেজ বন্ধ করলে কার্ট মুছে যাবে।</p>
+  <h3>My Orders (live)</h3>
+  <div id="myOrdersList" class="muted"></div>
+</div>
+
+<footer>
+  <p id="footerContactInfo"></p>
+</footer>
+
+<script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDSG8AC_KLzHlD1g867ZSLJEi54fJ9P82A",
+    authDomain: "project-a09d2.firebaseapp.com",
+    databaseURL: "https://project-a09d2-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "project-a09d2",
+    storageBucket: "project-a09d2.fire...
+  };
+</script>
+
+<script>
+/* Full JavaScript merged with Firebase realtime sync */
+(function(){
+
+  // ▼▼▼ SHOP CONTACT NUMBER (Now controlled by Developer Panel) ▼▼▼
+  let SHOP_PHONE = '+917003778369'; // Default
+  
+  // Storage keys
+  const KEY_CATS = 'categories_v1';
+  const KEY_SUBCATS = 'subCategories_v1';
+  const KEY_PRODS = 'products_v1';
+  const KEY_ORDERS = 'allOrders_v1';
+  const KEY_HISTORY = 'statsHistory_v1';
+  const KEY_SHOP_PHONE = 'shopPhone_v1';
+  // Keys for customer info
+  const KEY_CUST_NAME = 'cust_name_v1';
+  const KEY_CUST_PHONE = 'cust_phone_v1';
+  const KEY_CUST_ADDR = 
+  'cust_addr_v1';
+  
+  // Internal Passwords
+  const adminPassword = '10032009';
+  const devPassword = 'dev_pass_12345'; 
+
+  // Helpers
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+  }
+  function todayKey(d=new Date()){ return d.toISOString().split('T')[0]; }
+  function isoNow(){ return new Date().toISOString();
+  }
+  function escapeHtml(s){ 
+    if(s===undefined||s===null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&quot;',"'":'&#039;'}[c])); 
+  }
+  function localeCompareStrings(a,b){
+    try{ return String(a||'').localeCompare(String(b||''), ['bn','en'], {sensitivity:'base'}); }
+    catch(e){ return String(a||'').localeCompare(String(b||'')); }
+  }
+  // sortCategories helper is now generic and can sort sub-categories too
+  function sortCategories(arr){ return arr.sort((x,y)=>{ const xa=(x.bn&&x.bn.trim())?x.bn.trim():x.en; const yb=(y.bn&&y.bn.trim())?y.bn.trim():y.en; return localeCompareStrings(xa,yb); }); }
+  function sortProducts(arr){ return arr.sort((a,b)=>{ const an=(a.nameBn&&a.nameBn.trim())?a.nameBn.trim():a.nameEn; const bn=(b.nameBn&&b.nameBn.trim())?b.nameBn.trim():b.nameEn; return localeCompareStrings(an,bn); }); }
+
+  // Load & normalize local storage data
+  function loadCategories(){
+    try{
+      const raw = JSON.parse(localStorage.getItem(KEY_CATS) || '[]');
+      const norm 
+  = raw.map(item=>{
+        if(!item) return null;
+  if(typeof item === 'string') return { id: uid(), en: item, bn: '' };
+  if(item.en || item.bn) return { 
+          id: item.id ||
+  uid(), 
+          en: item.en ||
+  '', 
+          bn: item.bn ||
+  '' 
+          // REMOVED subCatEn/Bn from category model
+        };
+  return { id: uid(), en: String(item), bn: '' };
+      }).filter(Boolean);
+      localStorage.setItem(KEY_CATS, JSON.stringify(norm));
+      return norm;
+    }catch(e){ return [];
+  }
+  }
+
+  // NEW function to load sub-categories
+  function loadSubCategories(){
+    try{
+      const raw = JSON.parse(localStorage.getItem(KEY_SUBCATS) || '[]');
+  const norm = raw.map(item=>{
+        if(!item || !item.categoryId) return null; // Must have a parent
+        return { 
+          id: item.id || uid(), 
+          categoryId: item.categoryId,
+          en: item.en || '', 
+          bn: item.bn || '' 
+        };
+      }).filter(Boolean);
+  localStorage.setItem(KEY_SUBCATS, JSON.stringify(norm));
+      return norm;
+    }catch(e){ return []; }
+  }
+
+  function loadProducts(){
+    try{
+      const raw = JSON.parse(localStorage.getItem(KEY_PRODS) || '[]');
+  const norm = raw.map(p=>{
+        if(!p) return null;
+        // Check for old data structure (p.categoryId) and try to migrate
+        // This is a best-effort, new products will be correct
+        let subId = p.subCategoryId || p.categoryId; // Use subCategoryId if present, fallback to old categoryId
+
+        return {
+          id: p.id || uid(),
+        
+  subCategoryId: subId || '', // Products now belong to a Sub-Category
+          nameEn: p.nameEn || p.name || '',
+          nameBn: p.nameBn || '',
+          price: p.price || 0,
+          unit: p.unit || 'perKg',
+          discount: p.discount || 0,
+          discountType: p.discountType || 'percent',
+        
+  photo: p.photo || ''
+        };
+      }).filter(Boolean);
+  localStorage.setItem(KEY_PRODS, JSON.stringify(norm));
+      return norm;
+    }catch(e){ return []; }
+  }
+  
+  // This function is no longer used by loadProducts
+  function findOrCreateCategoryByName(name){
+    name = (name || '').trim();
+  if(!name) return '';
+    let found = categories.find(c => c.en === name || c.bn === name);
+    if(found) return found.id;
+  const obj = { id: uid(), en: name, bn: '' };
+    categories.push(obj);
+    localStorage.setItem(KEY_CATS, JSON.stringify(categories));
+    return obj.id;
+  }
+
+  // Models
+  let categories = loadCategories();
+  let subCategories = loadSubCategories();
+  // <-- NEW
+  let products = loadProducts();
+  let allOrders = [];
+  // array of order objects
+  try{ allOrders = JSON.parse(localStorage.getItem(KEY_ORDERS) || '[]'); } catch(e){ allOrders = [];
+  }
+
+  // Cart & Edit States
+  let currentCartPhone = null;
+  let currentCart = [];
+  let editingProductId = null;
+  let editingCategoryId = null;
+  let editingSubCategoryId = null; // <-- NEW
+
+  // Firebase runtime variables
+  let firebaseEnabled = false;
+  let _firebaseSet = null;
+  let _firebaseGet = null;
+  let _firebaseSubscribe = null;
+  let _firebaseUnsubscribe = {};
+  function firebaseUnsub(path){ if(_firebaseUnsubscribe[path]){ try{ _firebaseUnsubscribe[path](); }catch(e){} delete _firebaseUnsubscribe[path]; } }
+
+  // Category functions
+  window.saveCategory = function(){
+    const en = (document.getElementById('catNameEn').value || '').trim();
+  const bn = (document.getElementById('catNameBn').value || '').trim();
+    const saveBtn = document.getElementById('saveCategoryBtn');
+    
+    if(!en && !bn) return alert('Enter category name — নাম লিখুন');
+  if(editingCategoryId) {
+        // EDIT EXISTING CATEGORY
+        const existing = categories.find(c => c.id === editingCategoryId);
+  if(existing) {
+            existing.en = en || existing.en;
+  existing.bn = bn || existing.bn;
+        }
+    } else {
+        // ADD NEW CATEGORY
+        const exists = categories.find(c => (c.en && c.en.toLowerCase() === en.toLowerCase()) || (c.bn && c.bn === bn));
+  if(exists) return alert('Category already exists — ক্যাটাগরিটি আছে');
+        
+        const obj = { id: uid(), en: en ||
+  bn, bn: bn || '' }; // Removed sub-cat fields
+        categories.push(obj);
+  }
+    
+    saveCategories();
+    updateFilterSelects(); // Renamed function
+    updateCategoryList();
+    document.getElementById('catNameEn').value = '';
+  document.getElementById('catNameBn').value = '';
+    window.cancelEditCategory(); // Clear form and state
+  };
+  window.startEditCategory = function(id) {
+      const cat = categories.find(c => c.id === id);
+      if(!cat) return;
+  editingCategoryId = id;
+      document.getElementById('catNameEn').value = cat.en || '';
+      document.getElementById('catNameBn').value = cat.bn || '';
+  // Removed sub-cat fields
+      const saveBtn = document.getElementById('saveCategoryBtn');
+  if(saveBtn) saveBtn.textContent = 'Save Changes — পরিবর্তন সেভ';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  window.cancelEditCategory = function() {
+      editingCategoryId = null;
+      document.getElementById('catNameEn').value = '';
+      document.getElementById('catNameBn').value = '';
+  // Removed sub-cat fields
+      const saveBtn = document.getElementById('saveCategoryBtn');
+  if(saveBtn) saveBtn.textContent = 'Save Category — সেভ করুন';
+  };
+
+  // RE-WRITTEN to show nested list (and manage toggle button)
+  window.updateCategoryList = function(){
+    const el = document.getElementById('catList');
+  if(!el) return;
+    
+    // ▼▼▼ NEW: Reset list expansion ▼▼▼
+    el.classList.remove('expanded');
+    const btn = document.getElementById('catListToggleBtn');
+  if(btn) btn.textContent = 'Show More';
+    el.innerHTML = ''; // Clear list
+    // ▲▲▲ END NEW ▲▲▲
+    
+    const sortedCats = sortCategories(categories);
+  sortedCats.forEach(c=>{
+      const label = c.bn ? (escapeHtml(c.bn) + ' / ' + escapeHtml(c.en)) : escapeHtml(c.en);
+      
+      let subCatHtml = '';
+      const sortedSubs = sortCategories(subCategories.filter(s => s.categoryId === c.id));
+      sortedSubs.forEach(s => {
+          const subLabel = s.bn ? (escapeHtml(s.bn) + ' / ' + escapeHtml(s.en)) : escapeHtml(s.en);
+          subCatHtml += `<div class="subcategory-item">
+         
+     <h5>${subLabel}</h5>
+            <div>
+              <button class="action small" onclick="startEditSubCategory('${s.id}')">✏ Edit</button>
+              <button class="action small" onclick="removeSubCategoryById('${s.id}')">❌ Remove</button>
+            </div>
+          </div>`;
+      });
+
+      el.innerHTML += `<div class="category-list-item">
+        <div class="category-header">
+   
+         <h4>${label}</h4>
+          <div>
+            <button class="action small" onclick="startEditCategory('${c.id}')">✏ Edit Cat</button>
+            <button class="action small" onclick="removeCategoryById('${c.id}')">❌ Remove Cat</button>
+          </div>
+        </div>
+        ${subCatHtml}
+      </div>`;
+  });
+    
+    // ▼▼▼ NEW: Show/hide "Show More" button ▼▼▼
+    if (btn && el.children.length <= 5) { // Use 5 to match CSS rule (n+6)
+        btn.style.display = 'none';
+  } else if (btn) {
+        btn.style.display = 'block';
+  }
+    // ▲▲▲ END NEW ▲▲▲
+  };
+  window.removeCategoryById = function(id){
+    if(!confirm('Remove category AND all its sub-categories and products? — ক্যাটাগরি ও টিয়ার সব সাব-ক্যাটাগরি ও প্রোডাক্ট মুছতে চান?')) return;
+  // Find sub-categories to remove
+    const subsToRemove = subCategories.filter(s => s.categoryId === id);
+  const subIdsToRemove = subsToRemove.map(s => s.id);
+    
+    // Remove products of those sub-categories
+    products = products.filter(p => !subIdsToRemove.includes(p.subCategoryId));
+  // Remove sub-categories
+    subCategories = subCategories.filter(s => s.categoryId !== id);
+  // Remove category
+    categories = categories.filter(c => c.id !== id);
+
+    saveCategories(); saveSubCategories(); saveProducts();
+    updateFilterSelects(); updateCategoryList(); updateAdminProducts(); showProducts();
+  };
+
+  // ▼▼▼ NEW Sub-Category Functions ▼▼▼
+  window.saveSubCategory = function(){
+    const categoryId = (document.getElementById('subCatParentSelect').value || '').trim();
+  const en = (document.getElementById('subCatNameEn').value || '').trim();
+    const bn = (document.getElementById('subCatNameBn').value || '').trim();
+    const saveBtn = document.getElementById('saveSubCategoryBtn');
+    
+    if(!categoryId) return alert('Select parent category — মূল ক্যাটাগরি নির্বাচন করুন');
+    if(!en && !bn) return alert('Enter sub-category name — সাব-ক্যাটাগরি নাম লিখুন');
+    
+    if(editingSubCategoryId){
+        // EDIT EXISTING
+        const existing = subCategories.find(s => s.id === editingSubCategoryId);
+        if(existing) {
+            existing.categoryId = categoryId;
+            existing.en = en || existing.en;
+            existing.bn = bn || existing.bn;
+        }
+    } else {
+        // ADD NEW
+        const exists = subCategories.find(s => s.categoryId === categoryId && ((s.en && s.en.toLowerCase() === en.toLowerCase()) || (s.bn && s.bn === bn)));
+        if(exists) return alert('Sub-Category already exists in this parent — এই সাব-ক্যাটাগরি এই মূল ক্যাটাগরিতে আছে');
+        
+        const obj = { id: uid(), categoryId, en: en ||
+    bn, bn: bn || '' };
+        subCategories.push(obj);
+    }
+    saveSubCategories();
+    updateFilterSelects();
+    updateCategoryList();
+    window.cancelEditSubCategory();
+  };
+  window.startEditSubCategory = function(id) {
+    const sub = subCategories.find(s => s.id === id);
+    if(!sub) return;
+    editingSubCategoryId = id;
+    document.getElementById('subCatParentSelect').value = sub.categoryId;
+    document.getElementById('subCatNameEn').value = sub.en || '';
+    document.getElementById('subCatNameBn').value = sub.bn || '';
+    document.getElementById('saveSubCategoryBtn').textContent = 'Save Changes — পরিবর্তন সেভ';
+    document.getElementById('subCatParentSelect').scrollIntoView({ behavior: 'smooth' });
+  };
+  window.cancelEditSubCategory = function() {
+    editingSubCategoryId = null;
+    document.getElementById('subCatParentSelect').value = '';
+    document.getElementById('subCatNameEn').value = '';
+    document.getElementById('subCatNameBn').value = '';
+    document.getElementById('saveSubCategoryBtn').textContent = 'Save Sub-Category — সেভ করুন';
+  };
+  window.removeSubCategoryById = function(id){
+    if(!confirm('Remove sub-category AND all its products? — সাব-ক্যাটাগরি ও টিয়ার প্রোডাক্ট মুছতে চান?')) return;
+    // Remove products
+    products = products.filter(p => p.subCategoryId !== id);
+    // Remove sub-category
+    subCategories = subCategories.filter(s => s.id !== id);
+  
+    saveSubCategories(); saveProducts();
+    updateFilterSelects(); updateCategoryList(); updateAdminProducts(); showProducts();
+  };
+  // ▲▲▲ END Sub-Category Functions ▲▲▲
+
+  // RENAMED from updateCategorySelects and RE-WRITTEN
+  window.updateFilterSelects = function(){
+    const sortedCats = sortCategories(categories);
+  // Get all select elements
+    const parentCatSelect = document.getElementById('subCatParentSelect'); // Admin: Add Sub...
+    const prodSubCatSelect = document.getElementById('prodSubCatSelect'); // Admin: Add Prod...
+    const adminFilterSelect = document.getElementById('adminSubCatFilter'); // Admin: Filter
+    const custFilterSelect = document.getElementById('custSubCatFilter'); // Customer: Filter
+
+    [parentCatSelect, prodSubCatSelect, adminFilterSelect, custFilterSelect].forEach(sel => {
+        if(sel) {
+            sel.innerHTML = '';
+            // Add default option
+            if(sel === parentCatSelect || sel === prodSubCatSelect){
+                sel.innerHTML += '<option value="">-- Select Parent Category --</option>';
+            } else {
+                sel.innerHTML += '<option value="">-- All Categories / Sub-Categories --</option>';
+            }
+        }
+    });
+
+    sortedCats.forEach(cat => {
+        const sortedSubs = sortCategories(subCategories.filter(s => s.categoryId === cat.id));
+        if(sortedSubs.length > 0){
+            // Create optgroup for products/filters
+            const catLabel = cat.bn ? (cat.bn + ' / ' + cat.en) : cat.en;
+            const optGroup1 = document.createElement('optgroup'); // for prodSubCatSelect
+            const optGroup2 = document.createElement('optgroup'); // for adminFilterSelect
+            const optGroup3 = document.createElement('optgroup'); // for custFilterSelect
+            
+            optGroup1.label = catLabel;
+            optGroup2.label = catLabel;
+            optGroup3.label = catLabel;
+            
+            sortedSubs.forEach(s => {
+                const subLabel = s.bn ? (s.bn + ' / ' + s.en) : s.en;
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = subLabel;
+                
+                if(prodSubCatSelect) optGroup1.appendChild(opt.cloneNode(true));
+                if(adminFilterSelect) optGroup2.appendChild(opt.cloneNode(true));
+                if(custFilterSelect) optGroup3.appendChild(opt.cloneNode(true));
+            });
+
+            // Add the optgroups to the main selectors (if they exist)
+            if(prodSubCatSelect) prodSubCatSelect.appendChild(optGroup1);
+            if(adminFilterSelect) adminFilterSelect.appendChild(optGroup2);
+            if(custFilterSelect) custFilterSelect.appendChild(optGroup3);
+        }
+
+        // Only add main categories to the parentCatSelect (for creating sub-categories)
+        if(parentCatSelect){
+            const opt = document.createElement('option');
+            opt.value = cat.id;
+            opt.textContent = cat.bn ? (cat.bn + ' / ' + cat.en) : cat.en;
+            parentCatSelect.appendChild(opt);
+        }
+    });
+  };
+
+  // Product functions
+  window.saveProduct = function(){
+    const subCategoryId = document.getElementById('prodSubCatSelect').value;
+  // CHANGED
+    const nameEn = (document.getElementById('prodNameEn').value || '').trim();
+    const nameBn = (document.getElementById('prodNameBn').value || '').trim();
+    const price = parseFloat(document.getElementById('prodPrice').value);
+  const unit = document.getElementById('prodUnit').value;
+    const discount = parseFloat(document.getElementById('prodDiscount').value) || 0;
+    const discountType = document.getElementById('discountType').value;
+    const photoFile = document.getElementById('prodPhoto').files[0];
+  if(!subCategoryId) return alert('Select a sub-category — সাব-ক্যাটাগরি নির্বাচন করুন'); // CHANGED
+  if(!nameEn && !nameBn) return alert('Enter product name — প্রোডাক্ট নাম লিখুন');
+  if(isNaN(price)) return alert('Enter valid price — সঠিক দাম লিখুন');
+    
+    function finalize(photoData){
+      if(editingProductId){
+        const idx = products.findIndex(p => p.id === editingProductId);
+  if(idx >= 0){
+          const existingPhoto = products[idx].photo || '';
+          products[idx] = Object.assign({}, products[idx], { 
+            subCategoryId, 
+            nameEn, 
+            nameBn, 
+            price, 
+            unit, 
+            discount, 
+            discountType, // CHANGED
+            photo: photoData || existingPhoto 
+          });
+  } 
+        editingProductId = null; 
+      } else {
+        products.push({
+          id: uid(),
+          subCategoryId,
+          nameEn,
+          nameBn,
+          price,
+          unit,
+          discount,
+          discountType,
+          photo: photoData || ''
+        });
+      }
+      saveProducts();
+      updateAdminProducts();
+      document.getElementById('prodNameEn').value = '';
+      document.getElementById('prodNameBn').value = '';
+      document.getElementById('prodPrice').value = '';
+      document.getElementById('prodDiscount').value = '';
+      document.getElementById('prodPhoto').value = '';
+      document.getElementById('prodSubCatSelect').value = '';
+      document.getElementById('prodUnit').value = 'perKg';
+      window.cancelEdit();
+    }
+
+    if(photoFile){
+      const reader = new FileReader();
+      reader.onload = function(e){
+        finalize(e.target.result);
+      }
+      reader.readAsDataURL(photoFile);
+    } else {
+      finalize(null);
+    }
+  };
+  window.startEdit = function(id){
+    const p = products.find(p => p.id === id);
+    if(!p) return;
+    editingProductId = id;
+    document.getElementById('prodSubCatSelect').value = p.subCategoryId || '';
+    document.getElementById('prodNameEn').value = p.nameEn || '';
+    document.getElementById('prodNameBn').value = p.nameBn || '';
+    document.getElementById('prodPrice').value = p.price || 0;
+    document.getElementById('prodUnit').value = p.unit || 'perKg';
+    document.getElementById('prodDiscount').value = p.discount || 0;
+    document.getElementById('discountType').value = p.discountType || 'percent';
+    document.getElementById('saveProductBtn').textContent = 'Save Changes — পরিবর্তন সেভ';
+    document.getElementById('prodSubCatSelect').scrollIntoView({ behavior: 'smooth' });
+  };
+  window.cancelEdit = function(){
+    editingProductId = null;
+    document.getElementById('prodNameEn').value = '';
+    document.getElementById('prodNameBn').value = '';
+    document.getElementById('prodPrice').value = '';
+    document.getElementById('prodDiscount').value = '';
+    document.getElementById('prodPhoto').value = '';
+    document.getElementById('prodSubCatSelect').value = '';
+    document.getElementById('prodUnit').value = 'perKg';
+    document.getElementById('saveProductBtn').textContent = 'Save Product — সেভ করুন';
+  };
+  window.removeProductById = function(id){
+    if(!confirm('Remove product? — প্রোডাক্ট মুছবেন?')) return;
+    products = products.filter(p => p.id !== id);
+    saveProducts();
+    updateAdminProducts();
+    showProducts();
+  };
+  function getDiscountedPrice(p){
+    let final = p.price;
+    if(p.discountType === 'percent'){
+      final = p.price * (1 - p.discount/100);
+    } else if(p.discountType === 'flat'){
+      final = p.price - p.discount;
+    }
+    return Math.max(0, final).toFixed(2);
+  }
+  window.updateAdminProducts = function(){
+    const el = document.getElementById('prodList');
+    if(!el) return;
+    
+    // Reset list expansion
+    el.classList.remove('expanded');
+    const btn = document.getElementById('prodListToggleBtn');
+    if(btn) btn.textContent = 'Show More';
+    
+    el.innerHTML = '';
+    const filterId = document.getElementById('adminSubCatFilter').value;
+    const q = (document.getElementById('adminSearch').value || '').toLowerCase();
+    
+    const sortedProds = sortProducts(products);
+    
+    sortedProds.forEach(p=>{
+      if(filterId && p.subCategoryId !== filterId) return;
+      
+      // NEW: Get sub-category and parent category
+      const subCat = subCategories.find(s => s.id === p.subCategoryId) ||
+  { en: '?', bn: '?' };
+      const cat = categories.find(c => c.id === subCat.categoryId) || { en: '?', bn: '?'
+  };
+      const catLabel = cat.bn ? (cat.bn + ' / ' + cat.en) : cat.en;
+      const subCatLabel = subCat.bn ?
+  (subCat.bn + ' / ' + subCat.en) : subCat.en;
+      const combined = ((p.nameEn || '') + ' ' + (p.nameBn || '') + ' ' + cat.en + ' ' + cat.bn + ' ' + subCat.en + ' ' + subCat.bn).toLowerCase();
+      if(q && !combined.includes(q)) return;
+      
+      const nameLabel = p.nameBn ? (p.nameBn + ' / ' + p.nameEn) : p.nameEn;
+      const discounted = getDiscountedPrice(p);
+      
+      el.innerHTML += `<div class="product-card"> ${p.photo ?
+  `<img src="${p.photo}" alt="${escapeHtml(p.nameEn)}">` : '<div style="width:100%;height:130px;background:#fff;border-radius:8px 8px 0 0;"></div>'} <div class="product-info"> <h4>${escapeHtml(nameLabel)}</h4> <p class="muted">${escapeHtml(catLabel)} / ${escapeHtml(subCatLabel)}</p> <p>Price: ₹${p.price} (${p.unit})</p> <p>Discount: ${p.discount}${p.discountType === 'percent' ?
+  '%' : '₹'}</p> ${p.discount > 0 ? `<p>Final: ₹${discounted}</p>` : ''} </div> <div class="product-buttons"> <button class="action small" onclick="startEdit('${p.id}')">✏ Edit</button> <button class="action small" onclick="removeProductById('${p.id}')">❌ Remove</button> </div> </div>`;
+    });
+    
+    // Show/hide "Show More" button
+    if (btn && el.children.length <= 8) { 
+        btn.style.display = 'none';
+    } else if (btn) {
+        btn.style.display = 'block';
+    }
+  };
+  window.showProducts = function(){
+    const el = document.getElementById('custProdList');
+    if(!el) return;
+    
+    // Reset list expansion
+    el.classList.remove('expanded');
+    const btn = document.getElementById('custProdListToggleBtn');
+    if(btn) btn.textContent = 'Show More';
+    
+    el.innerHTML = '';
+    const filterId = document.getElementById('custSubCatFilter').value;
+    const q = (document.getElementById('custSearch').value || '').toLowerCase();
+    
+    const sortedProds = sortProducts(products);
+    
+    sortedProds.forEach(p=>{
+      if(filterId && p.subCategoryId !== filterId) return;
+      
+      // NEW: Get sub-category and parent category
+      const subCat = subCategories.find(s => s.id === p.subCategoryId) || { en: '?', bn: '?' };
+      const cat = categories.find(c => c.id === subCat.categoryId) || { en: '?', bn: '?' };
+      const catLabel = cat.bn ? (cat.bn + ' / ' + cat.en) : cat.en;
+      const subCatLabel = subCat.bn ? (subCat.bn + ' / ' + subCat.en) : subCat.en;
+      const combined = ((p.nameEn || '') + ' ' + (p.nameBn || '') + ' ' + cat.en + ' ' + cat.bn + ' ' + subCat.en + ' ' + subCat.bn).toLowerCase();
+      if(q && !combined.includes(q)) return;
+      
+      const nameLabel = p.nameBn ? (p.nameBn + ' / '.concat(p.nameEn)) : p.nameEn;
+      const discounted = getDiscountedPrice(p);
+      
+      let buttonsHtml = '';
+      if (p.unit === 'perKg') {
+        buttonsHtml = `
+          <div class="kg-input">
+            <input type="number" id="qty_${p.id}" placeholder="kg (e.g. 1.2)" step="0.1" min="0">
+            <button class="action small" onclick="addKgToCart('${p.id}')">➕</button>
+          </div>`;
+      } else {
+        buttonsHtml = `<button class="action small" onclick="addToCart('${p.id}', 1)">➕ Add — যোগ করুন</button>`;
+      }
+      
+      el.innerHTML += `<div class="product-card"> ${p.photo ? `<img src="${p.photo}" alt="${escapeHtml(p.nameEn)}">` : '<div style="width:100%;height:130px;background:#fff;border-radius:8px 8px 0 0;"></div>'} <div class="product-info"> <h4>${escapeHtml(nameLabel)}</h4> <p class="muted">${escapeHtml(catLabel)} / ${escapeHtml(subCatLabel)}</p> <p>Price: ₹${p.price} (${p.unit})</p> ${p.discount > 0 ?
+  `<p><b>Now: ₹${discounted}</b> (save ₹${(p.price-discounted).toFixed(2)})</p>` : ''} </div> <div class="product-buttons"> ${buttonsHtml} </div> </div>`;
+    });
+    
+    // Show/hide "Show More" button
+    if (btn && el.children.length <= 8) { 
+        btn.style.display = 'none';
+    } else if (btn) {
+        btn.style.display = 'block';
+    }
+  };
+  
+  // NEW: Toggle "Show More" / "Show Less"
+  window.toggleListExpansion = function(listId, btn) {
+    const list = document.getElementById(listId);
+    if (list.classList.contains('expanded')) {
+        list.classList.remove('expanded');
+        btn.textContent = 'Show More';
+    } else {
+        list.classList.add('expanded');
+        btn.textContent = 'Show Less';
+    }
+    // Scroll smoothly back to the top of the list when expanding
+    list.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // Cart functions
+  function getCartKey(phone){ return 'cart_' + phone; }
+  function saveCartForPhone(){
+    if(!currentCartPhone) return;
+    localStorage.setItem(getCartKey(currentCartPhone), JSON.stringify(currentCart));
+    syncToFirebase();
+  }
+  window.loadCart = function(phone){
+    if(!phone) return;
+    currentCartPhone = phone;
+    try{
+      currentCart = JSON.parse(localStorage.getItem(getCartKey(phone)) || '[]');
+    }catch(e){
+      currentCart = [];
+    }
+    updateCartUI();
+    
+    // Subscribe to cart changes for this user
+    subscribeCartListener(phone);
+    // Subscribe to their order changes
+    subscribeMyOrdersListener(phone);
+  };
+  function subscribeCartListener(phone){
+    firebaseUnsub('cart');
+    if(!firebaseEnabled || typeof _firebaseSubscribe !== 'function') return;
+
+    _firebaseUnsubscribe['cart'] = _firebaseSubscribe('carts/' + phone, snapVal => {
+      // NOTE: Firebase data may be an object if keys are not sequential numbers
+      if(Array.isArray(snapVal)) currentCart = snapVal;
+      else if(snapVal && typeof snapVal === 'object') currentCart = Object.values(snapVal);
+      else currentCart = currentCart || [];
+      localStorage.setItem('cart_' + phone, JSON.stringify(currentCart));
+      updateCartUI();
+    });
+  }
+  function unsubscribeCartListener(){
+    if(_firebaseUnsubscribe['cart']){
+      try{ _firebaseUnsubscribe['cart']();
+      }catch(e){} delete _firebaseUnsubscribe['cart'];
+    }
+  }
+
+  // My orders listener
+  function subscribeMyOrdersListener(phone){
+    firebaseUnsub('myorders');
+    if(!firebaseEnabled || typeof _firebaseSubscribe !== 'function') return;
+
+    _firebaseUnsubscribe['myorders'] = _firebaseSubscribe('orders/' + phone, snapVal => {
+      const el = document.getElementById('myOrdersList');
+      el.innerHTML = '';
+      if(!snapVal){
+        el.innerHTML = '<div class="muted">No orders yet.</div>';
+        return;
+      }
+      
+      const arr = Array.isArray(snapVal) ? snapVal.filter(Boolean) : Object.entries(snapVal).map(([k,v])=>({ id:k, ...v }));
+      arr.sort((a,b)=> (a.iso || '') < (b.iso || '') ? 1 : -1);
+      
+      arr.forEach(o=>{
+        const statusClass = (o.status || 'pending').toLowerCase();
+        const statusHtml = `<span class="status ${statusClass}">${escapeHtml(o.status || 'pending')}</span>`;
+        el.innerHTML += `<div style="margin:6px 0;">Order ${escapeHtml(o.id || '')} — ₹${(o.total||0).toFixed? (o.total.toFixed(2)) : (o.total||0)} ${statusHtml} <div class="muted">${(o.items||[]).map(it=>escapeHtml(it.nameEn||it.nameBn)+' x'+(it.qty||1)).join(', ')}</div> </div>`;
+      });
+    });
+  }
+  function clearMyOrdersUI(){
+    document.getElementById('myOrdersList').innerHTML = '';
+  }
+
+  // ▼▼▼ MODIFIED addToCart logic ▼▼▼
+  // Handles 'each' items (qty=1)
+  window.addToCart = function(productId, qty = 1){
+    const phone = (document.getElementById('custPhone').value || '').trim();
+    if(!phone) return alert('Enter phone number first — আগে ফোন নম্বর দিন');
+    if(phone !== currentCartPhone) window.loadCart(phone);
+    
+    const p = products.find(p => p.id === productId);
+    if(!p) return;
+    
+    const existingIndex = currentCart.findIndex(i => i.id === productId);
+    
+    // Calculate price and saved amount at time of adding
+    const discounted = getDiscountedPrice(p);
+    const pricePerUnit = parseFloat(discounted);
+    const savedPerUnit = p.price - pricePerUnit;
+    
+    if(existingIndex >= 0){
+      currentCart[existingIndex].qty += qty;
+    } else {
+      currentCart.push({
+        id: p.id,
+        nameEn: p.nameEn,
+        nameBn: p.nameBn,
+        unit: p.unit,
+        qty: qty,
+        price: pricePerUnit, // Discounted price
+        saved: savedPerUnit, // Saved per unit
+        originalPrice: p.price // Original price
+      });
+    }
+    saveCartForPhone();
+    updateCartUI();
+  };
+
+  // Handles 'perKg' items
+  window.addKgToCart = function(productId){
+    const qtyInput = document.getElementById('qty_' + productId);
+    const qty = parseFloat(qtyInput.value) || 0;
+    if(qty <= 0) return alert('Enter a valid quantity (e.g. 1.5) — সঠিক পরিমাণ (যেমন ১.৫) দিন');
+    window.addToCart(productId, qty);
+    qtyInput.value = ''; // Clear input after adding
+  };
+  
+  window.updateCartUI = function(){
+    const el = document.getElementById('cartList');
+    if(!el) return;
+    el.innerHTML = '';
+    
+    let total = 0;
+    let totalSaved = 0;
+    
+    if(!currentCart.length) {
+      el.innerHTML = '<p class="muted">Your cart is empty. — আপনার কার্ট খালি।</p>';
+    }
+
+    currentCart.forEach((it, idx)=>{
+      const itemTotal = it.qty * it.price;
+      const saved = it.qty * it.saved;
+      total += itemTotal;
+      totalSaved += saved;
+      
+      const label = it.nameBn ? (it.nameBn + ' / ' + it.nameEn) : it.nameEn;
+      
+      // Determine increment/decrement step
+      const step = (it.unit === 'perKg') ? 0.1 : 1;
+      
+      el.innerHTML += `<div class="product-card"> <div class="product-info"> <h4>${escapeHtml(label)}</h4> <p><b>Qty: ${it.qty}${it.unit === 'perKg' ?
+  ' kg' : ''}</b></p> <p>₹${it.price} × ${it.qty} = ₹${itemTotal.toFixed(2)}</p> ${saved > 0 ?
+  `<p class="muted">Saved — সেভ: ₹${saved.toFixed(2)}</p>` : ''} </div> <div class="cart-actions"> <button class="action small" onclick="changeQty(${idx}, ${step})">+</button> <button class="action small" onclick="changeQty(${idx}, -${step})">-</button> <button class="action small" onclick="removeFromCart(${idx})">❌</button> </div> </div>`;
+    });
+    
+    document.getElementById('cartTotal').innerText = `Total — মোট: ₹${total.toFixed(2)}${totalSaved>0?(' (You saved — সেভ: ₹'+totalSaved.toFixed(2)+')'):''}`;
+  }
+  
+  // ▼▼▼ MODIFIED changeQty ▼▼▼
+  window.changeQty = function(i, d){
+    if(i<0 || i>=currentCart.length) return;
+    currentCart[i].qty = parseFloat((currentCart[i].qty + d).toFixed(2));
+  // Handle floats
+    if(currentCart[i].qty <= 0) currentCart.splice(i,1);
+    saveCartForPhone();
+    updateCartUI();
+  };
+  window.removeFromCart = function(i){
+    if(i<0 || i>=currentCart.length) return;
+    currentCart.splice(i,1);
+    saveCartForPhone();
+  updateCartUI();
+  };
+
+  // This function is no longer used by checkout, but kept for legacy
+  function findProductById(id){
+    return products.find(p => p.id === id);
+  }
+
+  window.checkout = function(){
+    const name = (document.getElementById('custName').value || '').trim();
+    const phone = (document.getElementById('custPhone').value || '').trim();
+    const address = (document.getElementById('custAddress').value || '').trim();
+    
+    if(!name) return alert('Enter your name — আপনার নাম লিখুন');
+    if(!phone || phone.length < 10 || isNaN(phone)) return alert('Enter a valid phone number — সঠিক ফোন নম্বর দিন');
+    if(!address) return alert('Enter your address — আপনার ঠিকানা দিন');
+    if(!currentCart.length) return alert('Your cart is empty — আপনার কার্ট খালি');
+
+    let total = 0;
+    currentCart.forEach(it => { total += it.qty * it.price; });
+    
+    const orderId = 'ORD' + uid().substring(0, 8).toUpperCase();
+    const order = {
+      id: orderId,
+      name,
+      phone,
+      address,
+      items: currentCart,
+      total: total,
+      iso: isoNow(),
+      date: todayKey(),
+      status: 'Pending' // Initial status
+    };
+    
+    allOrders.push(order);
+    saveOrders();
+    
+    // Write orders to a separate path under the user's phone for tracking
+    try{
+      _firebaseSet('orders/' + phone.replace(/\D/g,'') + '/' + orderId, order);
+      _firebaseSet('allOrders/' + order.id, order); // <-- Save to allOrders list
+    } catch(e){
+      console.warn('Failed to write orders per-phone to firebase', e);
+    }
+    
+    let text = '🛒 Order Details — অর্ডার বিবরণ\n\n';
+    text += `👤 Name / নাম: ${order.name}\n📞 Phone / ফোন: ${order.phone}\n🏠 Address / ঠিকানা: ${order.address}\n\n`;
+    order.items.forEach(it => { 
+        const qtyLabel = `${it.qty}${it.unit === 'perKg' ? ' kg' : ' pc'}`; 
+        text += `• ${it.nameEn || it.nameBn} — Qty: ${qtyLabel} × ₹${(it.qty * it.price).toFixed(2)}\n`; 
+    });
+    text += `\n💰 Total / মোট: ₹${order.total.toFixed(2)}\n\nThank you — ধন্যবাদ!`; 
+
+    // ▼▼▼ MODIFIED: Uses global SHOP_PHONE ▼▼▼
+    window.open(`https://wa.me/${SHOP_PHONE.replace(/\D/g,'')}?text=${encodeURIComponent(text)}`, '_blank');
+
+    try{ localStorage.removeItem('cart_' + currentCartPhone); } catch(e){}
+    if(firebaseEnabled && typeof _firebaseSet === 'function'){
+      try{ _firebaseSet('carts/' + currentCartPhone, []);
+      } catch(e){ console.warn('Failed to clear cart in firebase', e); }
+    }
+    currentCart = [];
+    currentCartPhone = null;
+    updateCartUI();
+    updateStats();
+  };
+
+  // Persistence helpers & stats
+  function saveCategories(){ localStorage.setItem(KEY_CATS, JSON.stringify(categories)); syncToFirebase(); } 
+  function saveSubCategories(){ localStorage.setItem(KEY_SUBCATS, JSON.stringify(subCategories)); syncToFirebase();
+  } // <-- NEW
+  function saveProducts(){ localStorage.setItem(KEY_PRODS, JSON.stringify(products)); syncToFirebase(); } 
+  function saveOrders(){ localStorage.setItem(KEY_ORDERS, JSON.stringify(allOrders)); syncToFirebase();
+  } 
+  
+  function computeTodayStats(){
+    const today = todayKey();
+    const todays = allOrders.filter(o => o.date === today);
+    const totalOrders = todays.length;
+    let totalEarnings = todays.reduce((acc, o) => acc + (o.total || 0), 0);
+
+    document.getElementById('todayOrders').innerText = `Today's Orders — আজকের অর্ডার: ${totalOrders}`;
+    document.getElementById('todayEarnings').innerText = `Today's Earnings — আজকের আয়: ₹${totalEarnings.toFixed(2)}`;
+  }
+  
+  function updateStats(){
+    computeTodayStats();
+    
+    // Update 7-day history
+    let history = [];
+    try{ history = JSON.parse(localStorage.getItem(KEY_HISTORY) || '[]'); } catch(e){}
+    
+    const historyEl = document.getElementById('historyList');
+    if(historyEl) {
+        historyEl.innerHTML = '';
+        if(history.length > 0) {
+            history.sort((a,b) => a.date < b.date ? 1 : -1); // Newest first
+            history.forEach(h => {
+                historyEl.innerHTML += `<p>${h.date} — Orders: ${h.orders}, Earnings: ₹${h.earnings.toFixed(2)}</p>`;
+            });
+        } else {
+            historyEl.innerHTML = '<p>No sales history yet.</p>';
+        }
+    }
+    syncToFirebase();
+  }
+  
+  function dailyRollover(){
+    const today = todayKey();
+    let history = [];
+    try{ history = JSON.parse(localStorage.getItem(KEY_HISTORY) || '[]'); } catch(e){}
+    
+    // Check if today's stats are already recorded (to prevent double counting on reload)
+    if(history.some(h => h.date === today)) return;
+    
+    const todays = allOrders.filter(o => o.date === today);
+    if(todays.length === 0) return; // No orders today, nothing to record
+
+    let totalEarnings = todays.reduce((acc, o) => acc + (o.total || 0), 0);
+    
+    history.push({
+      date: today,
+      orders: todays.length,
+      earnings: totalEarnings
+    });
+    
+    // Keep only the last 7 days of history
+    history.sort((a,b) => a.date < b.date ? -1 : 1); // Oldest first
+    if(history.length > 7) history = history.slice(history.length - 7);
+    
+    localStorage.setItem(KEY_HISTORY, JSON.stringify(history));
+    updateStats();
+    syncToFirebase();
+  }
+  
+  function scheduleMidnightRollover(){
+    const now = new Date();
+    const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const ms = next - now;
+    
+    setTimeout(function(){
+      try{ dailyRollover(); } catch(e){ console.error(e); }
+      scheduleMidnightRollover();
+    }, ms + 1000);
+  }
+  
+  window.clearTodayOrders = function(){
+    if(!confirm('Delete all orders for today? — আজকের অর্ডার মুছবেন?')) return;
+    const today = todayKey();
+    allOrders = allOrders.filter(o => o.date !== today);
+    saveOrders();
+    updateStats();
+    syncToFirebase();
+    alert('Today\'s orders deleted — আজকের অর্ডার মুছে দেওয়া হয়েছে');
+  };
+  window.clearHistory = function(){
+    if(!confirm('Delete 7-day history? — ৭ দিনের হিসাব মুছবেন?')) return;
+    localStorage.setItem(KEY_HISTORY, JSON.stringify([]));
+    updateStats();
+    syncToFirebase();
+    alert('7-day history cleared — ৭ দিনের হিসাব মুছে দেওয়া হয়েছে');
+  };
+
+  // Firebase helper
+  window.syncToFirebase = function(){
+    // Only attempt to set if Firebase SDK is loaded and enabled
+    if(!firebaseEnabled || typeof _firebaseSet !== 'function') return;
+    
+    try{
+      _firebaseSet('categories', categories); 
+      _firebaseSet('subCategories', subCategories); // <-- NEW
+      _firebaseSet('products', products); 
+      _firebaseSet('allOrders', allOrders); 
+      _firebaseSet('statsHistory', JSON.parse(localStorage.getItem(KEY_HISTORY) || '[]'));
+      if(currentCartPhone) _firebaseSet('carts/' + currentCartPhone, currentCart);
+    } catch(e){
+      console.warn('Firebase sync failed', e);
+    }
+  };
+
+  // ▼▼▼ সংশোধিত loadFirebase: এখন synchronous এবং gloabl 'firebase' ব্যবহার করছে ▼▼▼
+  window.loadFirebase = function(firebaseConfig){
+    // 'firebase' object should be available globally because of the script tags above
+    if(typeof firebase === 'undefined' || !firebase.initializeApp || !firebaseConfig || !firebaseConfig.databaseURL) {
+      console.warn('Firebase SDK not loaded or config missing.');
+      return;
+    }
+    
+    try{
+      const app = firebase.initializeApp(firebaseConfig);
+      // Use firebase.database() for Realtime Database
+      const db = firebase.database();
+      
+      _firebaseSet = (path, val) => {
+        return db.ref(path).set(val);
+      };
+      _firebaseGet = (path) => {
+        return db.ref(path).get();
+      };
+      _firebaseSubscribe = (path, callback) => {
+        const ref = db.ref(path);
+        // .on() returns the unsubscribe function
+        const listener = ref.on('value', snap => {
+          callback(snap.val());
+        }, error => {
+            console.error("Firebase listen error on "+path+": ", error);
+        });
+        return () => ref.off('value', listener);
+      };
+
+      firebaseEnabled = true;
+      console.log('Firebase initialized and subscribed.');
+      
+      // Load and subscribe to main data sets (read-only for customers)
+      function ArrayAsObject(val){
+          if(Array.isArray(val)) return false;
+          return val && typeof val === 'object' && Object.keys(val).every(k => isNaN(k));
+      }
+
+      _firebaseUnsubscribe['shopPhone'] = _firebaseSubscribe('shopPhone', val => {
+          if(val) {
+              SHOP_PHONE = val;
+              localStorage.setItem(KEY_SHOP_PHONE, val);
+              document.getElementById('currentOrderPhone').innerText = 'Active Phone: ' + SHOP_PHONE;
+              document.getElementById('orderPhoneSelect').value = SHOP_PHONE;
+              setFooterContact();
+          }
+      });
+      _firebaseUnsubscribe['categories'] = _firebaseSubscribe('categories', val => {
+          if(ArrayAsObject(val)) categories = Object.values(val);
+          else if(Array.isArray(val)) categories = val;
+          else if(val && typeof val === 'object') categories = Object.values(val);
+          else categories = [];
+          localStorage.setItem(KEY_CATS, JSON.stringify(categories));
+          updateFilterSelects(); updateCategoryList(); 
+      });
+      _firebaseUnsubscribe['subCategories'] = _firebaseSubscribe('subCategories', val => { // <-- NEW
+          if(ArrayAsObject(val)) subCategories = Object.values(val);
+          else if(Array.isArray(val)) subCategories = val;
+          else if(val && typeof val === 'object') subCategories = Object.values(val);
+          else subCategories = [];
+          localStorage.setItem(KEY_SUBCATS, JSON.stringify(subCategories));
+          updateFilterSelects(); updateCategoryList(); 
+      });
+      _firebaseUnsubscribe['products'] = _firebaseSubscribe('products', val => {
+          if(ArrayAsObject(val)) products = Object.values(val);
+          else if(Array.isArray(val)) products = val;
+          else if(val && typeof val === 'object') products = Object.values(val);
+          else products = [];
+          localStorage.setItem(KEY_PRODS, JSON.stringify(products));
+          updateAdminProducts(); showProducts();
+      });
+      _firebaseUnsubscribe['allOrders'] = _firebaseSubscribe('allOrders', val => {
+          if(Array.isArray(val)) allOrders = val;
+          else if(val && typeof val === 'object') allOrders = Object.values(val);
+          else allOrders = [];
+          localStorage.setItem(KEY_ORDERS, JSON.stringify(allOrders));
+          updateStats(); // ▼▼▼ Admin order UI update REMOVED ▼▼▼
+          // if(document.getElementById('adminPanel')?.classList.contains('show')) updateAdminOrdersUI();
+      });
+      _firebaseUnsubscribe['statsHistory'] = _firebaseSubscribe('statsHistory', val => {
+          if(ArrayAsObject(val)) localStorage.setItem(KEY_HISTORY, JSON.stringify(Object.values(val)));
+          else if(Array.isArray(val)) localStorage.setItem(KEY_HISTORY, JSON.stringify(val));
+          else if(val && typeof val === 'object') localStorage.setItem(KEY_HISTORY, JSON.stringify(Object.values(val)));
+          updateStats();
+      });
+    } catch(err){
+      console.error('Failed to load Firebase:', err);
+    }
+  };
+  // ▲▲▲ এন্ড সংশোধিত loadFirebase ▲▲▲
+
+
+  // Toggle Password
+  window.togglePassword = function(id) {
+    const passField = document.getElementById(id);
+    if (passField) {
+      passField.type = passField.type === 'password' ? 'text' : 'password';
+    }
+  };
+
+  // Admin login/logout
+  window.adminLogin = function(){
+    const pass = (document.getElementById('adminPassword').value || '').trim();
+    if(pass === adminPassword){
+      document.getElementById('adminPassword').value = '';
+      showPanel('adminPanel');
+      updateFilterSelects();
+      updateCategoryList();
+      updateAdminProducts();
+      updateStats();
+    } else {
+      document.getElementById('loginMsg').innerText = 'Wrong password — ভুল পাসওয়ার্ড';
+    }
+  };
+  window.logoutAdmin = function(){
+    document.getElementById('adminPassword').value = '';
+    const check = document.getElementById('showAdminPass'); 
+    if (check) check.checked = false;
+    if (document.getElementById('adminPassword')) document.getElementById('adminPassword').type = 'password';
+    showPanel('adminLogin');
+  };
+
+  // Developer login/logout
+  window.developerLogin = function(){
+    const pass = (document.getElementById('devPassword').value || '').trim();
+    if(pass === devPassword){
+      document.getElementById('devPassword').value = '';
+      showPanel('developerPanel');
+    } else {
+      document.getElementById('devLoginMsg').innerText = 'Wrong password — ভুল পাসওয়ার্ড';
+    }
+  };
+  window.logoutDeveloper = function(){
+    document.getElementById('devPassword').value = '';
+    const check = document.getElementById('showDevPass'); 
+    if (check) check.checked = false;
+    if (document.getElementById('devPassword')) document.getElementById('devPassword').type = 'password';
+    showPanel('developerLogin');
+  };
+
+  // Developer Code Execution
+  window.runDevCode = function(){
+    const code = document.getElementById('devCode').value;
+    const msgEl = document.getElementById('devCodeMsg');
+    msgEl.style.color = 'red';
+    try{
+      const result = eval(code);
+      msgEl.style.color = 'green';
+      msgEl.innerText = 'Success! Result: ' + result;
+      // Re-run updates if needed
+      updateFilterSelects(); updateCategoryList(); updateAdminProducts(); showProducts();
+    } catch(e){
+      msgEl.innerText = 'Error: ' + e.message;
+      console.error(e);
+    }
+  };
+  
+  // Developer Phone Setting
+  window.saveOrderPhone = function(){
+      const newPhone = document.getElementById('orderPhoneSelect').value;
+      if (newPhone) {
+          SHOP_PHONE = newPhone;
+          localStorage.setItem(KEY_SHOP_PHONE, newPhone);
+          _firebaseSet('shopPhone', newPhone); // Sync to Firebase
+          document.getElementById('currentOrderPhone').innerText = 'Active Phone: ' + SHOP_PHONE;
+          setFooterContact();
+          alert('Order phone saved to ' + newPhone);
+      }
+  };
+
+  function setFooterContact(){
+    document.getElementById('footerContactInfo').innerHTML = `For contact, WhatsApp: <a href="https://wa.me/${SHOP_PHONE.replace(/\D/g,'')}" target="_blank">${SHOP_PHONE}</a>`;
+  }
+  
+  // ▲▲▲ End new function ▲▲▲
+  window.showPanel = function(id){
+    ['adminLogin', 'adminPanel', 'customerPanel', 'developerLogin', 'developerPanel'].forEach(x=>{ const el=document.getElementById(x); if(!el) return; el.classList.remove('show'); });
+    const panel = document.getElementById(id);
+    if(panel) panel.classList.add('show');
+
+    if(id === 'adminPanel'){
+      updateFilterSelects(); updateCategoryList(); updateAdminProducts(); updateStats(); /* updateAdminOrdersUI();
+  */ // <-- REMOVED
+    }
+    if(id === 'customerPanel'){
+      updateFilterSelects(); showProducts(); updateCartUI();
+    }
+    if(id === 'developerPanel'){
+      const msgEl = document.getElementById('devCodeMsg');
+      if(msgEl) msgEl.innerText = '';
+      // Update phone UI when panel is shown
+      document.getElementById('currentOrderPhone').innerText = 'Active Phone: ' + SHOP_PHONE;
+      document.getElementById('orderPhoneSelect').value = SHOP_PHONE;
+    }
+  };
+  window.removeProduct = function(id){ removeProductById(id); };
+  
+  function renderMyOrdersFromLocal(phone){ 
+      const el = document.getElementById('myOrdersList');
+      el.innerHTML = '';
+      const orders = allOrders.filter(o => o.phone === phone);
+      orders.sort((a,b)=> (a.iso || '') < (b.iso || '') ? 1 : -1);
+      if(!orders.length) { el.innerHTML = '<div class="muted">No orders yet.</div>'; return; }
+      orders.forEach(o=>{
+        const statusClass = (o.status || 'pending').toLowerCase();
+        const statusHtml = `<span class="status ${statusClass}">${escapeHtml(o.status || 'pending')}</span>`;
+        el.innerHTML += `<div style="margin:6px 0;">Order ${escapeHtml(o.id || '')} — ₹${(o.total||0).toFixed? (o.total.toFixed(2)) : (o.total||0)} ${statusHtml} <div class="muted">${(o.items||[]).map(it=>escapeHtml(it.nameEn||it.nameBn)+' x'+(it.qty||1)).join(', ')}</div> </div>`;
+      });
+  }
+
+  function init(){
+    // 1. Load initial data
+    SHOP_PHONE = localStorage.getItem(KEY_SHOP_PHONE) || SHOP_PHONE;
+    
+    // 2. Load Customer Local Storage
+    const savedName = localStorage.getItem(KEY_CUST_NAME) || '';
+    const savedPhone = localStorage.getItem(KEY_CUST_PHONE) || '';
+    const savedAddr = localStorage.getItem(KEY_CUST_ADDR) || '';
+    document.getElementById('custName').value = savedName;
+    document.getElementById('custPhone').value = savedPhone;
+    document.getElementById('custAddress').value = savedAddr;
+
+    // 3. Attach customer info event listeners
+    document.getElementById('custName').addEventListener('input', (e) => { localStorage.setItem(KEY_CUST_NAME, e.target.value); });
+    document.getElementById('custPhone').addEventListener('input', (e) => { 
+        localStorage.setItem(KEY_CUST_PHONE, e.target.value);
+        // If phone changes, load the new cart
+        if(e.target.value.trim() && e.target.value.trim() !== currentCartPhone) {
+            loadCart(e.target.value.trim());
+        }
+    });
+    document.getElementById('custAddress').addEventListener('input', (e) => { localStorage.setItem(KEY_CUST_ADDR, e.target.value); });
+    
+    // 4. Load Firebase
+    // Uses the global firebaseConfig variable from the script tag above
+    loadFirebase(firebaseConfig);
+    
+    updateFilterSelects(); 
+    updateCategoryList();
+    updateAdminProducts(); 
+    showProducts(); 
+    updateStats();
+    scheduleMidnightRollover();
+    
+    if(savedPhone.trim()) {
+      loadCart(savedPhone.trim());
+    }
+
+    const adminSearchEl = document.getElementById('adminSearch');
+    if(adminSearchEl) adminSearchEl.addEventListener('input', updateAdminProducts);
+    const custSearchEl = document.getElementById('custSearch');
+    if(custSearchEl) custSearchEl.addEventListener('input', showProducts);
+    
+    setFooterContact();
+    
+    // Spell check find/replace
+    document.body.innerHTML = document.body.innerHTML.replace(/ক্যাটেগরি/g, 'ক্যাটাগরি');
+  }
+
+  init();
+  showPanel('customerPanel');
+
+})(); // end IIFE
+</script>
+
+</body>
+</html>
