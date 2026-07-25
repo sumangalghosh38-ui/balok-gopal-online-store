@@ -90,6 +90,7 @@
     <button id="nav-btn-counter" class="nav-btn active" onclick="switchPage('counter', this)">Cash Calculator</button>
     <button id="nav-btn-expense" class="nav-btn" onclick="switchPage('expense', this)">Expense Panel</button>
     <button id="nav-btn-tracker" class="nav-btn" onclick="switchPage('tracker', this)">Earnings Tracker</button>
+    <button id="nav-btn-import" class="nav-btn" onclick="switchPage('import', this)">Import Data</button>
 </div>
 
 <div id="counter" class="page active">
@@ -246,6 +247,46 @@
     </div>
 </div>
 
+<div id="import" class="page">
+    <div class="tracker-container" id="importPanelArea">
+        <h2 style="text-align: center;">Import Data</h2>
+        <p style="text-align:center; color:#7f8c8d; font-size:0.85rem; margin-top:-8px;">
+            Paste JSON matching the target's format below. This merges into the app's local
+            history and uploads to Firebase — entries older than 30 days will be pruned back
+            out of Firebase on the next sync (they stay in the app either way).
+        </p>
+
+        <div class="form-container">
+            <select id="importTarget" class="tracker-select" onchange="updateImportHint()">
+                <option value="earningsData">Earnings Tracker entries</option>
+                <option value="expenseEntries">Expense entries</option>
+                <option value="expItems">Expense item names</option>
+                <option value="productMargins">Product margins</option>
+            </select>
+            <div id="importHint" class="margin-help" style="text-align:left; margin-bottom:8px;"></div>
+            <textarea id="importJsonText" rows="10" class="tracker-input" style="width:100%; box-sizing:border-box; font-family: monospace; font-size: 0.85rem;" placeholder="Paste JSON here"></textarea>
+            <button class="btn-main" onclick="importJsonData()">Upload to Firebase</button>
+            <div id="importStatus" style="text-align:center; margin-top:10px; font-weight:bold;"></div>
+        </div>
+
+        <hr style="margin:25px 0; border:none; border-top:1px solid #eee;">
+
+        <h3 style="text-align:center; color:#2c3e50; margin-bottom:5px;">Backup & Restore (this device only)</h3>
+        <p style="text-align:center; color:#7f8c8d; font-size:0.85rem; margin-top:0;">
+            Everything currently saved on this device — earnings, expenses, item list, margins.
+        </p>
+
+        <button class="btn-main" style="background:#34495e;" onclick="downloadLocalBackup()">Download All Local Data (JSON file)</button>
+
+        <div style="margin-top:18px; text-align:center;">
+            <label for="restoreFileInput" style="display:block; margin-bottom:8px; font-weight:bold; color:#2c3e50;">Restore from a file on this device</label>
+            <input type="file" id="restoreFileInput" accept="application/json" onchange="restoreFromFile(this)">
+            <div style="font-size:0.78rem; color:#7f8c8d; margin-top:6px;">Picking a file merges it straight into local storage — it is never uploaded to Firebase.</div>
+        </div>
+        <div id="restoreStatus" style="text-align:center; margin-top:10px; font-weight:bold;"></div>
+    </div>
+</div>
+
 <script>
     // --- FIREBASE CONFIGURATION ---
     const firebaseConfig = {
@@ -262,6 +303,63 @@
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
+
+    /* ---------------- Local device storage (permanent archive) ----------
+       Firebase only keeps a rolling RETENTION_DAYS window (see the cleanup
+       functions below) to keep the live database small. Everything this
+       app has ever seen is additionally kept in real on-device storage —
+       app-private storage via AndroidBridge when running inside an Android
+       wrapper, localStorage as a browser fallback — so nothing is ever lost,
+       and nothing is cleared by an app update (only by clearing app storage
+       or uninstalling). */
+    const LOCAL_ARCHIVE_KEY = 'bgos_store_manager_archive';
+    const RETENTION_DAYS = 30; // entries older than this are purged from Firebase (never from local storage)
+
+    function loadLocalArchive() {
+        try {
+            if (window.AndroidBridge && AndroidBridge.loadLocalData) {
+                const raw = AndroidBridge.loadLocalData();
+                return raw ? JSON.parse(raw) : {};
+            }
+            return JSON.parse(localStorage.getItem(LOCAL_ARCHIVE_KEY)) || {};
+        } catch (e) { return {}; }
+    }
+
+    function saveLocalArchive() {
+        try {
+            const archive = { entries, expenseEntries, expItems, productMargins };
+            const json = JSON.stringify(archive);
+            if (window.AndroidBridge && AndroidBridge.saveLocalData) {
+                AndroidBridge.saveLocalData(json);
+            } else {
+                localStorage.setItem(LOCAL_ARCHIVE_KEY, json);
+            }
+        } catch (e) { console.warn('Local archive save skipped:', e); }
+    }
+
+    // Merges an incoming array (from Firebase) into a local array by id —
+    // additions and edits come through, but ids present locally that are
+    // missing from the incoming array (because Firebase aged them out) are
+    // kept rather than dropped.
+    function mergeById(localArr, incomingArr) {
+        const map = new Map((localArr || []).map(item => [String(item.id), item]));
+        (incomingArr || []).forEach(item => map.set(String(item.id), item));
+        return Array.from(map.values());
+    }
+
+    // Prunes entries older than RETENTION_DAYS out of the given Firebase
+    // path — local storage is untouched, since `entries`/`expenseEntries`
+    // in memory already hold the full merged history at this point.
+    function cleanupExpired(firebasePath, incomingArr) {
+        const cutoff = Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000;
+        const kept = (incomingArr || []).filter(e => {
+            const t = new Date(e.date).getTime();
+            return Number.isNaN(t) || t >= cutoff; // keep anything with an unreadable date rather than risk deleting it
+        });
+        if (kept.length !== (incomingArr || []).length) {
+            database.ref(firebasePath).set(kept).catch(e => console.warn('Cleanup: failed to prune ' + firebasePath, e));
+        }
+    }
 
     // --- APP DATA ---
     let currentRawTotal = 0; 
@@ -285,8 +383,11 @@
     database.ref('earningsData').on('value', (snapshot) => {
         const data = snapshot.val();
         // Parse into array in case Firebase returns an object due to missing indexes
-        entries = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
+        const incoming = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
+        entries = mergeById(entries, incoming);
+        saveLocalArchive();
         renderTable();
+        cleanupExpired('earningsData', incoming);
     });
 
     database.ref('expItems').on('value', (snapshot) => {
@@ -297,20 +398,25 @@
             // Push default items to Firebase on first load
             database.ref('expItems').set(expItems);
         }
+        saveLocalArchive();
         loadExpItems();
         loadProductFilter();
     });
 
     database.ref('productMargins').on('value', (snapshot) => {
         productMargins = snapshot.val() || {};
+        saveLocalArchive();
         loadSelectedProductMargin();
         renderTable();
     });
 
     database.ref('expenseEntries').on('value', (snapshot) => {
         const data = snapshot.val();
-        expenseEntries = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
+        const incoming = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
+        expenseEntries = mergeById(expenseEntries, incoming);
+        saveLocalArchive();
         renderExpensePanel();
+        cleanupExpired('expenseEntries', incoming);
     });
 
     // --- UTILITIES ---
@@ -387,6 +493,12 @@
 
     /* INITIALIZATION */
     window.onload = () => {
+        const archive = loadLocalArchive();
+        if (archive.entries) entries = archive.entries;
+        if (archive.expenseEntries) expenseEntries = archive.expenseEntries;
+        if (archive.expItems) expItems = archive.expItems;
+        if (archive.productMargins) productMargins = archive.productMargins;
+
         const today = new Date();
         document.getElementById('date').value = today.toISOString().split('T')[0];
         document.getElementById('expDate').value = today.toISOString().split('T')[0];
@@ -395,6 +507,8 @@
         renderTable();
         loadExpItems();
         renderExpensePanel();
+        loadProductFilter();
+        updateImportHint();
     };
 
     function setupFilters() {
@@ -442,6 +556,7 @@
         editingId = null;
         document.getElementById('mainBtn').innerText = "Add Entry";
         database.ref('earningsData').set(entries); // SYNC TO FIREBASE
+        saveLocalArchive();
         resetTrackerForm();
     }
 
@@ -450,6 +565,7 @@
         if(confirm("Delete this entry?")) { 
             entries = entries.filter(e => e.id !== id); 
             database.ref('earningsData').set(entries); // SYNC TO FIREBASE
+            saveLocalArchive();
         }
     }
 
@@ -578,7 +694,11 @@
     function loadExpItems(arr = expItems) {
         const sel = document.getElementById('expItem');
         sel.innerHTML = '';
-        arr.forEach(x => {
+        // Always show items A-Z, regardless of the order they were added in.
+        // "Add New Item" is a UI action, not a real item, so it stays pinned last.
+        const withoutMarker = arr.filter(x => x !== 'Add New Item').sort((a, b) => a.localeCompare(b));
+        const sorted = arr.includes('Add New Item') ? [...withoutMarker, 'Add New Item'] : withoutMarker;
+        sorted.forEach(x => {
             let o = document.createElement('option');
             o.text = x; o.value = x;
             sel.add(o);
@@ -623,6 +743,7 @@
         }
         productMargins[item] = margin;
         database.ref('productMargins').set(productMargins);
+        saveLocalArchive();
         loadProductFilter();
         renderProductReport();
         alert("Profit margin saved for " + item);
@@ -638,6 +759,7 @@
         if (selected === "Add New Item" && newItemVal) {
             expItems.splice(expItems.length - 1, 0, newItemVal);
             database.ref('expItems').set(expItems); // SYNC TO FIREBASE
+            saveLocalArchive();
             selected = newItemVal;
             loadExpItems();
         }
@@ -660,6 +782,7 @@
 
         editingExpenseId = null;
         database.ref('expenseEntries').set(expenseEntries); // SYNC TO FIREBASE
+        saveLocalArchive();
         document.getElementById('expAmt').value = '';
         document.getElementById('expNewItem').value = '';
         document.getElementById('expMargin').value = productMargins[selected] ?? '';
@@ -685,6 +808,7 @@
         if (!confirm("Delete this expense entry?")) return;
         expenseEntries = expenseEntries.filter(x => String(x.id) !== String(id));
         database.ref('expenseEntries').set(expenseEntries); // SYNC TO FIREBASE
+        saveLocalArchive();
     }
 
     function renderExpensePanel() {
@@ -753,11 +877,147 @@
         // changed automatically; use that row's Edit button to update it.
         entries.push({ id: Date.now(), date: dateVal, ob: 0, cash: 0, online: 0, expenses: total, loan: 0 });
         database.ref('earningsData').set(entries); // SYNC TO FIREBASE
+        saveLocalArchive();
 
         document.getElementById('date').value = dateVal;
         document.getElementById('expenses').value = total;
         switchPage('tracker', document.getElementById('nav-btn-tracker'));
         alert("Expense ₹" + total + " exported to Earnings Tracker for " + dateToDMY(dateVal));
+    }
+
+    /* IMPORT DATA (paste JSON, upload straight to Firebase) */
+    const IMPORT_HINTS = {
+        earningsData: 'JSON array of entries, e.g. [{"id":1690000000000,"date":"2026-06-01","ob":0,"cash":500,"online":200,"expenses":50,"loan":0}]. "id" is optional — it will be generated if missing.',
+        expenseEntries: 'JSON array of entries, e.g. [{"id":1690000000000,"date":"2026-06-01","item":"Milk","amount":40,"mode":"Cash"}]. "id" is optional — it will be generated if missing.',
+        expItems: 'JSON array of item names, e.g. ["Milk","Bread","Cadbury"].',
+        productMargins: 'JSON object of item name to margin percent, e.g. {"Milk": 12, "Bread": 8}.'
+    };
+
+    function updateImportHint() {
+        const target = document.getElementById('importTarget').value;
+        document.getElementById('importHint').textContent = IMPORT_HINTS[target] || '';
+    }
+
+    function importJsonData() {
+        const target = document.getElementById('importTarget').value;
+        const raw = document.getElementById('importJsonText').value.trim();
+        const statusEl = document.getElementById('importStatus');
+        statusEl.style.color = '#e74c3c';
+
+        if (!raw) { statusEl.textContent = 'Paste some JSON first.'; return; }
+
+        let parsed;
+        try { parsed = JSON.parse(raw); }
+        catch (e) { statusEl.textContent = 'That is not valid JSON: ' + e.message; return; }
+
+        if (target === 'earningsData' || target === 'expenseEntries') {
+            if (!Array.isArray(parsed)) { statusEl.textContent = 'This target needs a JSON array of entries.'; return; }
+            // Fill in an id for any entry that's missing one, so nothing collides or gets silently dropped by mergeById.
+            parsed.forEach((item, i) => { if (item && item.id === undefined) item.id = Date.now() + i; });
+        } else if (target === 'expItems') {
+            if (!Array.isArray(parsed)) { statusEl.textContent = 'This target needs a JSON array of item names.'; return; }
+        } else if (target === 'productMargins') {
+            if (typeof parsed !== 'object' || Array.isArray(parsed) || parsed === null) { statusEl.textContent = 'This target needs a JSON object of { "item name": marginPercent }.'; return; }
+        }
+
+        if (target === 'earningsData') {
+            entries = mergeById(entries, parsed);
+            database.ref('earningsData').set(entries);
+        } else if (target === 'expenseEntries') {
+            expenseEntries = mergeById(expenseEntries, parsed);
+            database.ref('expenseEntries').set(expenseEntries);
+        } else if (target === 'expItems') {
+            const withoutMarker = parsed.filter(x => x !== 'Add New Item');
+            expItems = [...new Set(withoutMarker)].concat('Add New Item');
+            database.ref('expItems').set(expItems);
+        } else if (target === 'productMargins') {
+            productMargins = { ...productMargins, ...parsed };
+            database.ref('productMargins').set(productMargins);
+        }
+
+        saveLocalArchive();
+        renderTable();
+        renderExpensePanel();
+        loadExpItems();
+        loadProductFilter();
+        document.getElementById('importJsonText').value = '';
+        statusEl.style.color = '#27ae60';
+        statusEl.textContent = 'Uploaded.';
+    }
+
+    /* BACKUP & RESTORE (local device only — no Firebase involved) */
+    function downloadLocalBackup() {
+        const archive = { entries, expenseEntries, expItems, productMargins, exportedAt: new Date().toISOString() };
+        const json = JSON.stringify(archive, null, 2);
+        const stamp = new Date().toISOString().slice(0, 10);
+        const filename = `store-manager-backup-${stamp}.json`;
+
+        // Inside the packaged APK this page runs in a bare Android WebView.
+        // WebView has no default download handler, so blob: URLs + <a download>
+        // do nothing there (they only work in a real browser tab). If the
+        // native side has exposed a bridge (see AndroidBridge.saveFile in
+        // MainActivity), hand the file to it instead.
+        if (window.AndroidBridge && typeof window.AndroidBridge.saveFile === 'function') {
+            window.AndroidBridge.saveFile(json, filename, 'application/json');
+            const statusEl = document.getElementById('restoreStatus');
+            if (statusEl) { statusEl.style.color = '#27ae60'; statusEl.textContent = 'Saved to Downloads.'; }
+            return;
+        }
+
+        // Normal browser fallback (desktop/mobile Chrome, not the APK)
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function restoreFromFile(fileInput) {
+        const file = fileInput.files && fileInput.files[0];
+        const statusEl = document.getElementById('restoreStatus');
+        if (!file) return;
+        statusEl.style.color = '#e74c3c';
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            let parsed;
+            try { parsed = JSON.parse(reader.result); }
+            catch (e) {
+                statusEl.textContent = 'That file is not valid JSON: ' + e.message;
+                fileInput.value = '';
+                return;
+            }
+
+            // Merge — never replace — so restoring a backup can only add
+            // history back, never silently drop anything already saved here.
+            if (Array.isArray(parsed.entries)) entries = mergeById(entries, parsed.entries);
+            if (Array.isArray(parsed.expenseEntries)) expenseEntries = mergeById(expenseEntries, parsed.expenseEntries);
+            if (Array.isArray(parsed.expItems)) {
+                const withoutMarker = parsed.expItems.filter(x => x !== 'Add New Item');
+                expItems = [...new Set([...expItems.filter(x => x !== 'Add New Item'), ...withoutMarker])].concat('Add New Item');
+            }
+            if (parsed.productMargins && typeof parsed.productMargins === 'object' && !Array.isArray(parsed.productMargins)) {
+                productMargins = { ...productMargins, ...parsed.productMargins };
+            }
+
+            saveLocalArchive(); // local only — deliberately no database.ref(...).set(...) here
+            renderTable();
+            renderExpensePanel();
+            loadExpItems();
+            loadProductFilter();
+            statusEl.style.color = '#27ae60';
+            statusEl.textContent = 'Restored to this device (not uploaded to Firebase).';
+            fileInput.value = '';
+        };
+        reader.onerror = () => {
+            statusEl.style.color = '#e74c3c';
+            statusEl.textContent = 'Could not read that file.';
+        };
+        reader.readAsText(file);
     }
 </script>
 </body>
