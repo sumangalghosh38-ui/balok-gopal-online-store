@@ -786,9 +786,9 @@
 
     .crop-handle {
       position: absolute;
-      width: 44px;
-      height: 44px;
-      margin: -25px;
+      width: 30px;
+      height: 30px;
+      margin: -15px;
       background: #fff;
       border: 2px solid var(--primary);
       border-radius: 50%;
@@ -2359,8 +2359,7 @@
         <p class="muted" style="margin:0 0 12px; font-size:0.82em;">
           Two formats are accepted — a flat list (one row per sub-category):
         </p>
-        <pre
-          style="background:#0b1220; color:#c9d6f5; padding:10px 12px; border-radius:8px; font-size:0.78em; overflow-x:auto; margin:0 0 12px;">[
+        <pre style="background:#0b1220; color:#c9d6f5; padding:10px 12px; border-radius:8px; font-size:0.78em; overflow-x:auto; margin:0 0 12px;">[
   { "category": "Grocery", "categoryBn": "মুদি", "subCategory": "Flour", "subCategoryBn": "আটা" },
   { "category": "Grocery", "subCategory": "Rice", "subCategoryBn": "চাল" }
 ]</pre>
@@ -2368,8 +2367,7 @@
           …or grouped (one row per category, with a list of sub-categories — use an empty/omitted
           <code>subCategories</code> list to add a category with no sub-categories yet):
         </p>
-        <pre
-          style="background:#0b1220; color:#c9d6f5; padding:10px 12px; border-radius:8px; font-size:0.78em; overflow-x:auto; margin:0 0 12px;">[
+        <pre style="background:#0b1220; color:#c9d6f5; padding:10px 12px; border-radius:8px; font-size:0.78em; overflow-x:auto; margin:0 0 12px;">[
   {
     "category": "Grocery",
     "categoryBn": "মুদি",
@@ -2404,8 +2402,7 @@
         <p class="muted" style="margin:0 0 12px; font-size:0.82em;">
           Expected format — a plain array, or <code>{"products":[...]}</code>:
         </p>
-        <pre
-          style="background:#0b1220; color:#c9d6f5; padding:10px 12px; border-radius:8px; font-size:0.78em; overflow-x:auto; margin:0 0 12px;">[
+        <pre style="background:#0b1220; color:#c9d6f5; padding:10px 12px; border-radius:8px; font-size:0.78em; overflow-x:auto; margin:0 0 12px;">[
   {
     "category": "Grocery",
     "subCategory": "Flour",
@@ -3575,212 +3572,148 @@
         openCropPhoto(rawDataUrl, section);
       };
 
-      /* ==========================================================================
-         CROP MODAL & INTERACTION LOGIC
-         ========================================================================== */
+      // ── Crop modal (used after camera capture) ──
+      let _cropSection = null;
+      let _cropNaturalW = 0, _cropNaturalH = 0;
+      let _cropDrag = null; // { mode: 'move'|'nw'|'ne'|'sw'|'se', startX, startY, box0 }
 
-      let _cropRawData = null;
-      let _cropDrag = null;
-
-      /**
-       * Open the crop modal with an image DataURL
-       */
-      function openCropModal(dataUrl) {
-        _cropRawData = dataUrl;
+      function openCropPhoto(dataUrl, section) {
+        _cropSection = section;
         const overlay = document.getElementById('cropModalOverlay');
         const img = document.getElementById('cropImgEl');
-        const box = document.getElementById('cropBoxEl');
-
-        if (!overlay || !img || !box) return;
-
-        img.onload = () => {
-          overlay.style.display = 'flex';
-
-          // Reset crop box size and center it over the image
-          const wrapWidth = img.clientWidth;
-          const wrapHeight = img.clientHeight;
-          const initialSize = Math.min(wrapWidth, wrapHeight) * 0.8;
-
-          box.style.width = initialSize + 'px';
-          box.style.height = initialSize + 'px';
-          box.style.left = ((wrapWidth - initialSize) / 2) + 'px';
-          box.style.top = ((wrapHeight - initialSize) / 2) + 'px';
-
-          _initCropEvents();
+        img.onload = function () {
+          _cropNaturalW = img.naturalWidth;
+          _cropNaturalH = img.naturalHeight;
+          _resetCropBox();
         };
-
         img.src = dataUrl;
+        overlay.classList.add('show');
       }
 
-      /**
-       * Close/Cancel crop modal
-       */
-      function cancelCropPhoto() {
-        const overlay = document.getElementById('cropModalOverlay');
-        if (overlay) overlay.style.display = 'none';
-        _cropRawData = null;
-      }
+      window.cancelCropPhoto = function () {
+        document.getElementById('cropModalOverlay').classList.remove('show');
+        document.getElementById('cropImgEl').src = '';
+        _cropSection = null;
+      };
 
-      /**
-       * Attach pointer events to the crop box & handles
-       */
-      function _initCropEvents() {
-        const box = document.getElementById('cropBoxEl');
-        if (!box || box._hasCropEvents) return;
-
-        box.addEventListener('pointerdown', _onCropPointerDown);
-        window.addEventListener('pointermove', _onCropPointerMove);
-        window.addEventListener('pointerup', _onCropPointerUp);
-        window.addEventListener('pointercancel', _onCropPointerUp);
-
-        box._hasCropEvents = true;
-      }
-
-      /**
-       * Handle Pointer Down (Start dragging or resizing)
-       */
-      function _onCropPointerDown(e) {
-        const box = document.getElementById('cropBoxEl');
-        if (!box) return;
-
-        const handleTarget = e.target.closest('[data-handle]');
-        const isInsideBox = e.target === box || box.contains(e.target);
-
-        // If user clicked outside box or handles, ignore
-        if (!handleTarget && !isInsideBox) return;
-
-        _cropDrag = {
-          mode: handleTarget ? handleTarget.getAttribute('data-handle') : 'move',
-          startX: e.clientX,
-          startY: e.clientY,
-          box0: {
-            left: box.offsetLeft,
-            top: box.offsetTop,
-            width: box.offsetWidth,
-            height: box.offsetHeight
-          }
-        };
-
-        if (e.pointerId !== undefined && e.target.setPointerCapture) {
-          try {
-            e.target.setPointerCapture(e.pointerId);
-          } catch (err) { }
-        }
-
-        e.preventDefault();
-        e.stopPropagation();
-      }
-
-      /**
-       * Handle Pointer Move (Dragging or Resizing in progress)
-       */
-      function _onCropPointerMove(e) {
-        if (!_cropDrag) return;
-
-        const box = document.getElementById('cropBoxEl');
+      function _resetCropBox() {
+        const wrap = document.getElementById('cropImgWrap');
         const img = document.getElementById('cropImgEl');
-        if (!box || !img) return;
-
-        const dx = e.clientX - _cropDrag.startX;
-        const dy = e.clientY - _cropDrag.startY;
-        const b0 = _cropDrag.box0;
-
-        const maxW = img.clientWidth;
-        const maxH = img.clientHeight;
-        const minSize = 50; // Minimum size of the crop box in pixels
-
-        if (_cropDrag.mode === 'move') {
-          // Moving the whole crop box within the image borders
-          let newLeft = Math.max(0, Math.min(maxW - b0.width, b0.left + dx));
-          let newTop = Math.max(0, Math.min(maxH - b0.height, b0.top + dy));
-
-          box.style.left = newLeft + 'px';
-          box.style.top = newTop + 'px';
-        } else {
-          // Corner Handle Resizing (Locked to 1:1 Square)
-          let left = b0.left;
-          let top = b0.top;
-          let size = b0.width;
-
-          if (_cropDrag.mode === 'se') {
-            const delta = Math.max(dx, dy);
-            const maxSize = Math.min(maxW - left, maxH - top);
-            size = Math.max(minSize, Math.min(maxSize, b0.width + delta));
-          } else if (_cropDrag.mode === 'sw') {
-            const delta = Math.max(-dx, dy);
-            const maxSize = Math.min(b0.left + b0.width, maxH - top);
-            size = Math.max(minSize, Math.min(maxSize, b0.width + delta));
-            left = b0.left + b0.width - size;
-          } else if (_cropDrag.mode === 'ne') {
-            const delta = Math.max(dx, -dy);
-            const maxSize = Math.min(maxW - left, b0.top + b0.height);
-            size = Math.max(minSize, Math.min(maxSize, b0.width + delta));
-            top = b0.top + b0.height - size;
-          } else if (_cropDrag.mode === 'nw') {
-            const delta = Math.max(-dx, -dy);
-            const maxSize = Math.min(b0.left + b0.width, b0.top + b0.height);
-            size = Math.max(minSize, Math.min(maxSize, b0.width + delta));
-            left = b0.left + b0.width - size;
-            top = b0.top + b0.height - size;
-          }
-
+        const box = document.getElementById('cropBoxEl');
+        // Wait a tick so the image has laid out at its displayed size
+        requestAnimationFrame(() => {
+          const w = img.clientWidth, h = img.clientHeight;
+          const size = Math.min(w, h) * 0.8;
+          const left = (w - size) / 2, top = (h - size) / 2;
           box.style.left = left + 'px';
           box.style.top = top + 'px';
           box.style.width = size + 'px';
           box.style.height = size + 'px';
-        }
+        });
+      }
 
+      function _cropBounds() {
+        const img = document.getElementById('cropImgEl');
+        return { w: img.clientWidth, h: img.clientHeight };
+      }
+
+      function _onCropPointerDown(e) {
+        const target = e.target.closest('[data-handle]');
+        const box = document.getElementById('cropBoxEl');
+        const point = ('clientX' in e) ? e : (e.touches && e.touches[0]);
+        if (!point) return;
+        _cropDrag = {
+          mode: target ? target.getAttribute('data-handle') : 'move',
+          startX: point.clientX,
+          startY: point.clientY,
+          box0: { left: box.offsetLeft, top: box.offsetTop, width: box.offsetWidth, height: box.offsetHeight }
+        };
+        if (e.pointerId !== undefined && e.target.setPointerCapture) {
+          try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
+        }
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      function _onCropPointerMove(e) {
+        if (!_cropDrag) return;
+        const point = ('clientX' in e) ? e : (e.touches && e.touches[0]);
+        if (!point) return;
+        const dx = point.clientX - _cropDrag.startX;
+        const dy = point.clientY - _cropDrag.startY;
+        const box = document.getElementById('cropBoxEl');
+        const { w: maxW, h: maxH } = _cropBounds();
+        const b0 = _cropDrag.box0;
+        const minSize = 40;
+
+        if (_cropDrag.mode === 'move') {
+          let left = b0.left + dx, top = b0.top + dy;
+          left = Math.max(0, Math.min(maxW - b0.width, left));
+          top = Math.max(0, Math.min(maxH - b0.height, top));
+          box.style.left = left + 'px';
+          box.style.top = top + 'px';
+        } else {
+          let { left, top, width, height } = b0;
+          if (_cropDrag.mode.includes('e')) width = Math.max(minSize, Math.min(maxW - left, b0.width + dx));
+          if (_cropDrag.mode.includes('s')) height = Math.max(minSize, Math.min(maxH - top, b0.height + dy));
+          if (_cropDrag.mode.includes('w')) {
+            const newLeft = Math.max(0, Math.min(b0.left + b0.width - minSize, b0.left + dx));
+            width = b0.left + b0.width - newLeft;
+            left = newLeft;
+          }
+          if (_cropDrag.mode.includes('n')) {
+            const newTop = Math.max(0, Math.min(b0.top + b0.height - minSize, b0.top + dy));
+            height = b0.top + b0.height - newTop;
+            top = newTop;
+          }
+          box.style.left = left + 'px';
+          box.style.top = top + 'px';
+          box.style.width = width + 'px';
+          box.style.height = height + 'px';
+        }
         e.preventDefault();
       }
 
-      /**
-       * Handle Pointer Up (Release Drag)
-       */
-      function _onCropPointerUp(e) {
-        if (!_cropDrag) return;
-        _cropDrag = null;
-      }
+      function _onCropPointerUp() { _cropDrag = null; }
 
-      /**
-       * Apply Crop & Generate Final Image Output
-       */
-      function applyCropPhoto() {
+      (function _wireCropEvents() {
+        const stage = document.getElementById('cropStage');
+        if (!stage) return;
+        const useDown = window.PointerEvent ? 'pointerdown' : 'mousedown';
+        const useMove = window.PointerEvent ? 'pointermove' : 'mousemove';
+        const useUp = window.PointerEvent ? 'pointerup' : 'mouseup';
+        stage.addEventListener(useDown, _onCropPointerDown, { passive: false });
+        window.addEventListener(useMove, _onCropPointerMove, { passive: false });
+        window.addEventListener(useUp, _onCropPointerUp);
+        if (!window.PointerEvent) {
+          // Fallback for very old browsers without Pointer Events support
+          stage.addEventListener('touchstart', _onCropPointerDown, { passive: false });
+          window.addEventListener('touchmove', _onCropPointerMove, { passive: false });
+          window.addEventListener('touchend', _onCropPointerUp);
+        }
+      })();
+
+      window.confirmCropPhoto = function () {
         const img = document.getElementById('cropImgEl');
         const box = document.getElementById('cropBoxEl');
+        const scaleX = _cropNaturalW / img.clientWidth;
+        const scaleY = _cropNaturalH / img.clientHeight;
+        const sx = box.offsetLeft * scaleX;
+        const sy = box.offsetTop * scaleY;
+        const sw = box.offsetWidth * scaleX;
+        const sh = box.offsetHeight * scaleY;
 
-        if (!img || !box || !_cropRawData) return;
-
-        // Calculate scaling ratios between displayed image and actual natural image size
-        const scaleX = img.naturalWidth / img.clientWidth;
-        const scaleY = img.naturalHeight / img.clientHeight;
-
-        const cropX = box.offsetLeft * scaleX;
-        const cropY = box.offsetTop * scaleY;
-        const cropWidth = box.offsetWidth * scaleX;
-        const cropHeight = box.offsetHeight * scaleY;
-
-        // Create canvas to render cropped region
-        const canvas = document.createElement('canvas');
-        canvas.width = cropWidth;
-        canvas.height = cropHeight;
-
+        const canvas = document.getElementById('cropCanvasEl');
+        canvas.width = sw;
+        canvas.height = sh;
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(
-          img,
-          cropX, cropY, cropWidth, cropHeight,
-          0, 0, cropWidth, cropHeight
-        );
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+        const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+        const section = _cropSection;
 
-        // Get cropped base64 image data
-        const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
-
-        // TODO: Update your target form field / image preview here
-        // Example:
-        // const photoPreview = document.getElementById('photoPreview');
-        // if (photoPreview) photoPreview.src = croppedDataUrl;
-
-        cancelCropPhoto();
-      }
+        window.cancelCropPhoto();
+        compressDataUrl(croppedDataUrl, 40, dataUrl => setPhotoFromDataUrl(section, dataUrl));
+      };
 
       // ── Categories ───────────────────────────────────
       window.saveCategory = async function () {
