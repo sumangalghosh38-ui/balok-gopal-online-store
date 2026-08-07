@@ -786,9 +786,9 @@
 
     .crop-handle {
       position: absolute;
-      width: 30px;
-      height: 30px;
-      margin: -15px;
+      width: 44px;
+      height: 44px;
+      margin: -25px;
       background: #fff;
       border: 2px solid var(--primary);
       border-radius: 50%;
@@ -2359,7 +2359,8 @@
         <p class="muted" style="margin:0 0 12px; font-size:0.82em;">
           Two formats are accepted — a flat list (one row per sub-category):
         </p>
-        <pre style="background:#0b1220; color:#c9d6f5; padding:10px 12px; border-radius:8px; font-size:0.78em; overflow-x:auto; margin:0 0 12px;">[
+        <pre
+          style="background:#0b1220; color:#c9d6f5; padding:10px 12px; border-radius:8px; font-size:0.78em; overflow-x:auto; margin:0 0 12px;">[
   { "category": "Grocery", "categoryBn": "মুদি", "subCategory": "Flour", "subCategoryBn": "আটা" },
   { "category": "Grocery", "subCategory": "Rice", "subCategoryBn": "চাল" }
 ]</pre>
@@ -2367,7 +2368,8 @@
           …or grouped (one row per category, with a list of sub-categories — use an empty/omitted
           <code>subCategories</code> list to add a category with no sub-categories yet):
         </p>
-        <pre style="background:#0b1220; color:#c9d6f5; padding:10px 12px; border-radius:8px; font-size:0.78em; overflow-x:auto; margin:0 0 12px;">[
+        <pre
+          style="background:#0b1220; color:#c9d6f5; padding:10px 12px; border-radius:8px; font-size:0.78em; overflow-x:auto; margin:0 0 12px;">[
   {
     "category": "Grocery",
     "categoryBn": "মুদি",
@@ -2402,7 +2404,8 @@
         <p class="muted" style="margin:0 0 12px; font-size:0.82em;">
           Expected format — a plain array, or <code>{"products":[...]}</code>:
         </p>
-        <pre style="background:#0b1220; color:#c9d6f5; padding:10px 12px; border-radius:8px; font-size:0.78em; overflow-x:auto; margin:0 0 12px;">[
+        <pre
+          style="background:#0b1220; color:#c9d6f5; padding:10px 12px; border-radius:8px; font-size:0.78em; overflow-x:auto; margin:0 0 12px;">[
   {
     "category": "Grocery",
     "subCategory": "Flour",
@@ -3620,16 +3623,23 @@
       function _onCropPointerDown(e) {
         const target = e.target.closest('[data-handle]');
         const box = document.getElementById('cropBoxEl');
+
+        // NEW: Only allow dragging if the user actually clicked inside the box
+        const isInsideBox = e.target === box || box.contains(e.target);
+        if (!target && !isInsideBox) return;
+
         const point = ('clientX' in e) ? e : (e.touches && e.touches[0]);
         if (!point) return;
+
         _cropDrag = {
           mode: target ? target.getAttribute('data-handle') : 'move',
           startX: point.clientX,
           startY: point.clientY,
           box0: { left: box.offsetLeft, top: box.offsetTop, width: box.offsetWidth, height: box.offsetHeight }
         };
+
         if (e.pointerId !== undefined && e.target.setPointerCapture) {
-          try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
+          try { e.target.setPointerCapture(e.pointerId); } catch (err) { }
         }
         e.preventDefault();
         e.stopPropagation();
