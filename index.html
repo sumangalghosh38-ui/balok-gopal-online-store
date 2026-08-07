@@ -786,35 +786,37 @@
 
     .crop-handle {
       position: absolute;
-      width: 22px;
-      height: 22px;
+      width: 30px;
+      height: 30px;
+      margin: -15px;
       background: #fff;
       border: 2px solid var(--primary);
       border-radius: 50%;
       touch-action: none;
+      z-index: 5;
     }
 
     .crop-handle.nw {
-      top: -11px;
-      left: -11px;
+      top: 0;
+      left: 0;
       cursor: nwse-resize;
     }
 
     .crop-handle.ne {
-      top: -11px;
-      right: -11px;
+      top: 0;
+      right: 0;
       cursor: nesw-resize;
     }
 
     .crop-handle.sw {
-      bottom: -11px;
-      left: -11px;
+      bottom: 0;
+      left: 0;
       cursor: nesw-resize;
     }
 
     .crop-handle.se {
-      bottom: -11px;
-      right: -11px;
+      bottom: 0;
+      right: 0;
       cursor: nwse-resize;
     }
 
@@ -3618,20 +3620,25 @@
       function _onCropPointerDown(e) {
         const target = e.target.closest('[data-handle]');
         const box = document.getElementById('cropBoxEl');
-        const rect = box.getBoundingClientRect();
-        const point = e.touches ? e.touches[0] : e;
+        const point = ('clientX' in e) ? e : (e.touches && e.touches[0]);
+        if (!point) return;
         _cropDrag = {
           mode: target ? target.getAttribute('data-handle') : 'move',
           startX: point.clientX,
           startY: point.clientY,
           box0: { left: box.offsetLeft, top: box.offsetTop, width: box.offsetWidth, height: box.offsetHeight }
         };
+        if (e.pointerId !== undefined && e.target.setPointerCapture) {
+          try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
+        }
         e.preventDefault();
+        e.stopPropagation();
       }
 
       function _onCropPointerMove(e) {
         if (!_cropDrag) return;
-        const point = e.touches ? e.touches[0] : e;
+        const point = ('clientX' in e) ? e : (e.touches && e.touches[0]);
+        if (!point) return;
         const dx = point.clientX - _cropDrag.startX;
         const dy = point.clientY - _cropDrag.startY;
         const box = document.getElementById('cropBoxEl');
@@ -3672,12 +3679,18 @@
       (function _wireCropEvents() {
         const stage = document.getElementById('cropStage');
         if (!stage) return;
-        stage.addEventListener('mousedown', _onCropPointerDown);
-        window.addEventListener('mousemove', _onCropPointerMove);
-        window.addEventListener('mouseup', _onCropPointerUp);
-        stage.addEventListener('touchstart', _onCropPointerDown, { passive: false });
-        window.addEventListener('touchmove', _onCropPointerMove, { passive: false });
-        window.addEventListener('touchend', _onCropPointerUp);
+        const useDown = window.PointerEvent ? 'pointerdown' : 'mousedown';
+        const useMove = window.PointerEvent ? 'pointermove' : 'mousemove';
+        const useUp = window.PointerEvent ? 'pointerup' : 'mouseup';
+        stage.addEventListener(useDown, _onCropPointerDown, { passive: false });
+        window.addEventListener(useMove, _onCropPointerMove, { passive: false });
+        window.addEventListener(useUp, _onCropPointerUp);
+        if (!window.PointerEvent) {
+          // Fallback for very old browsers without Pointer Events support
+          stage.addEventListener('touchstart', _onCropPointerDown, { passive: false });
+          window.addEventListener('touchmove', _onCropPointerMove, { passive: false });
+          window.addEventListener('touchend', _onCropPointerUp);
+        }
       })();
 
       window.confirmCropPhoto = function () {
