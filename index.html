@@ -3677,7 +3677,7 @@
 
       function _onCropPointerUp() { _cropDrag = null; }
 
-      (function _wireCropEvents() {
+      function _wireCropEvents() {
         const stage = document.getElementById('cropStage');
         if (!stage) return;
         const useDown = window.PointerEvent ? 'pointerdown' : 'mousedown';
@@ -3692,7 +3692,15 @@
           window.addEventListener('touchmove', _onCropPointerMove, { passive: false });
           window.addEventListener('touchend', _onCropPointerUp);
         }
-      })();
+      }
+      // The crop modal markup lives further down the document than this script,
+      // so cropStage doesn't exist in the DOM yet if we wire it up immediately.
+      // Wait for the full document to finish parsing first.
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', _wireCropEvents);
+      } else {
+        _wireCropEvents();
+      }
 
       window.confirmCropPhoto = function () {
         const img = document.getElementById('cropImgEl');
